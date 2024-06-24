@@ -5,6 +5,7 @@ import signals
 import sys
 import logging
 import fnmatch
+import evaluation
 
 '''
 主程序，用于执行策略和调用其他模块
@@ -34,7 +35,7 @@ def main():
             # 假设所有文件都使用相同的策略
             if df is not None:
                 df_processed = apply_strategy(df, signals.ATR_regression, params_list[0])
-                
+
                 # 输出处理后的DataFrame或进行进一步分析的代码
                 print(f"处理的文件: {file_name}")
                 print(df_processed.head())
@@ -43,7 +44,10 @@ def main():
                 df_processed.to_csv(output_file_path, index=False)
                 logging.info(f"已处理并保存文件: {output_file_path}")
 
-                # TODO: 执行交易模拟，性能评估等
+                # 计算资金曲线、年化收益率、回撤
+                position = initial_capital
+                evaluation.evaluate_performance(output_file_path)
+
             else:
                 logging.warning(f"Unable to process file: {file_name}")
 

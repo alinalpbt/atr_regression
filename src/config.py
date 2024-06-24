@@ -9,10 +9,10 @@ file_type = 'csv'
 output_path = r'D:\code\100CODE\ATR_regression\results'
 
 # 基础参数
-INITIAL_CASH = 10000 # 初始资金
-LEVERAGE_RATE = 1  # 杠杆
-SLIPPAGE = 1 / 1000  # 滑点
-C_RATE = 5 / 10000  # 手续费
+initial_capital = 10000 # 初始资金
+leverage_rate = 1  # 杠杆
+slippage = 1 / 1000  # 滑点
+C_rate = 5 / 10000  # 手续费
 # MIN_MARGIN_RATIO = 2 / 100  # 最低保证金率
 # FACE_VALUE = 0.00001 
 
