@@ -10,15 +10,15 @@ output_path = r'D:\code\100CODE\ATR_regression\results'
 
 # 基础参数
 INITIAL_CASH = 10000 # 初始资金
+LEVERAGE_RATE = 1  # 杠杆
+SLIPPAGE = 1 / 1000  # 滑点
 C_RATE = 5 / 10000  # 手续费
-# LEVERAGE_RATE = 1  # 杠杆
-# SLIPPAGE = 1 / 1000  # 滑点
 # MIN_MARGIN_RATIO = 2 / 100  # 最低保证金率
 # FACE_VALUE = 0.00001 
 
 # 回测时间
-STRATEGY_START = '2024-01-01'  # 回测开始时间
-STRATEGY_END = '2024-04-01'  # 回测结束时间
+# STRATEGY_START = '2018-01-01'  # 回测开始时间
+# STRATEGY_END = '2024-04-01'  # 回测结束时间
 
 # 股票/证券符号 & 时间周期
 tickers = ['SPY', 'QQQ', '000300']
