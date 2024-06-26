@@ -56,35 +56,38 @@ class ATR_Regression_Strategy(bt.Strategy):
 '''运行回测'''
 # 加载QQQ数据
 data_qqq = bt.feeds.GenericCSVData(
-    dataname='results/processed_BATS_QQQ.csv', 
+    dataname='C:/github/atr_regression/results/processed_BATS_QQQ.csv', 
     datetime=0,
     open=1,
     high=2,
     low=3,
     close=4,
-    volume=5 #volume数据在第f列
+    volume=5, #volume数据在第f列
+    dtformat='%Y-%m-%d %H:%M:%S%z'
 )
 
 # 加载SPY数据
 data_spy = bt.feeds.GenericCSVData(
-    dataname='results/processed_BATS_SPY.csv',
+    dataname='C:/github/atr_regression/results/processed_BATS_SPY.csv',
     datetime=0,
     open=1,
     high=2,
     low=3,
     close=4,
-    volume=5
+    volume=5,
+    dtformat='%Y-%m-%d %H:%M:%S%z'
 )
 
 # 加载000300数据
 data_000300 = bt.feeds.GenericCSVData(
-    dataname='results/processed_SSE_DLY_000300.csv',
+    dataname='C:/github/atr_regression/results/processed_SSE_DLY_000300.csv',
     datetime=0,
     open=1,
     high=2,
     low=3,
     close=4,
-    volume=8
+    volume=8,
+    dtformat='%Y-%m-%d %H:%M:%S%z'
 )
 
 cerebro = bt.Cerebro() #初始化 Cerebro
