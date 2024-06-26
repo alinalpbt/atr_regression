@@ -53,21 +53,50 @@ class ATR_Regression_Strategy(bt.Strategy):
 
 
 '''运行回测'''
-data = bt.feeds.GenericCSVData( # 加载数据
-    dataname='path_to_your_csv.csv',
+# 加载QQQ数据
+data_qqq = bt.feeds.GenericCSVData(
+    dataname='results/processed_BATS_QQQ.csv',
     datetime=0,
     open=1,
     high=2,
     low=3,
     close=4,
     volume=5,
-    timeframe=bt.TimeFrame.Minutes, #制定数据的时间框架为分钟
-    compression=240 #240分钟（4h）为一个数据点
+    timeframe=bt.TimeFrame.Minutes,
+    compression=240
+)
+
+# 加载SPY数据
+data_spy = bt.feeds.GenericCSVData(
+    dataname='results/processed_BATS_SPY.csv',
+    datetime=0,
+    open=1,
+    high=2,
+    low=3,
+    close=4,
+    volume=5,
+    timeframe=bt.TimeFrame.Minutes,
+    compression=240
+)
+
+# 加载000300数据
+data_000300 = bt.feeds.GenericCSVData(
+    dataname='results/processed_SSE_DLY_000300.csv',
+    datetime=0,
+    open=1,
+    high=2,
+    low=3,
+    close=4,
+    volume=5,
+    timeframe=bt.TimeFrame.Minutes,
+    compression=240
 )
 
 cerebro = bt.Cerebro() #初始化 Cerebro
-cerebro.adddata(data) #将前面加载的市场数据添加到Cerebro引擎
-cerebro.addstrategy(EMA_ATR_Strategy) #向Cerebro引擎添加策略
+cerebro.adddata(data_qqq)
+cerebro.adddata(data_spy)
+cerebro.adddata(data_000300) #将前面加载的市场数据添加到Cerebro引擎
+cerebro.addstrategy(ATR_Regression_Strategy) #向Cerebro引擎添加策略
 
 cerebro.broker.setcash(10000) # 设置初始资金
 cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)  # 使用全部可用资金进行交易
