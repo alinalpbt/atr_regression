@@ -100,20 +100,34 @@ cerebro.broker.setcash(10000) # 设置初始资金
 cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)  # 使用全部可用资金进行交易
 
 # 添加资金曲线、最大回撤和年化数据分析器
-cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return')
+cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_qqq})
+cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_spy})
+cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_000300})
 cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
 cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days)
 
 results = cerebro.run()
 
 # 获取分析结果
-time_return = results[0].analyzers.time_return.get_analysis()
-drawdown = results[0].analyzers.drawdown.get_analysis()
-sharpe = results[0].analyzers.sharpe.get_analysis()
+time_return_qqq = results[0].analyzers.time_return.get_analysis()
+time_return_spy = results[1].analyzers.time_return.get_analysis()
+time_return_000300 = results[2].analyzers.time_return.get_analysis()
+drawdown_qqq = results[0].analyzers.drawdown.get_analysis()
+drawdown_spy = results[1].analyzers.drawdown.get_analysis()
+drawdown_000300 = results[2].analyzers.drawdown.get_analysis()
+sharpe_qqq = results[0].analyzers.sharpe.get_analysis()
+sharpe_spy = results[1].analyzers.sharpe.get_analysis()
+sharpe_000300 = results[2].analyzers.sharpe.get_analysis()
+
+# 保留两位小数并输出分析结果
+formatted_time_return_qqq = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_qqq.items()}
+formatted_time_return_spy = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_spy.items()}
+formatted_time_return_000300 = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_000300.items()}
 
 # 输出分析结果
-print('Time Return:', time_return)
-print('Drawdown:', drawdown)
-print('Sharpe Ratio:', sharpe)
+# print('Time Return:', time_return)
+print('QQQ数据源的年化回报率:', formatted_time_return_qqq, '\n')
+print('SPY数据源的年化回报率:', formatted_time_return_spy, '\n')
+print('000300数据源的年化回报率:', formatted_time_return_000300, '\n')
 
 cerebro.plot(style='candlestick') #用蜡烛图进行绘图
