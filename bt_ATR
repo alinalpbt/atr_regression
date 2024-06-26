@@ -1,4 +1,5 @@
 import backtrader as bt
+from backtrader.analyzers import TimeReturn, DrawDown, SharpeRatio
 import pandas as pd
 
 '''定义策略'''
@@ -55,15 +56,13 @@ class ATR_Regression_Strategy(bt.Strategy):
 '''运行回测'''
 # 加载QQQ数据
 data_qqq = bt.feeds.GenericCSVData(
-    dataname='results/processed_BATS_QQQ.csv',
+    dataname='results/processed_BATS_QQQ.csv', 
     datetime=0,
     open=1,
     high=2,
     low=3,
     close=4,
-    volume=5,
-    timeframe=bt.TimeFrame.Minutes,
-    compression=240
+    volume=5 #volume数据在第f列
 )
 
 # 加载SPY数据
@@ -74,9 +73,7 @@ data_spy = bt.feeds.GenericCSVData(
     high=2,
     low=3,
     close=4,
-    volume=5,
-    timeframe=bt.TimeFrame.Minutes,
-    compression=240
+    volume=5
 )
 
 # 加载000300数据
@@ -87,9 +84,7 @@ data_000300 = bt.feeds.GenericCSVData(
     high=2,
     low=3,
     close=4,
-    volume=5,
-    timeframe=bt.TimeFrame.Minutes,
-    compression=240
+    volume=8
 )
 
 cerebro = bt.Cerebro() #初始化 Cerebro
@@ -101,5 +96,21 @@ cerebro.addstrategy(ATR_Regression_Strategy) #向Cerebro引擎添加策略
 cerebro.broker.setcash(10000) # 设置初始资金
 cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)  # 使用全部可用资金进行交易
 
-cerebro.run() # 执行回测
+# 添加资金曲线、最大回撤和年化数据分析器
+cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return')
+cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days)
+
+results = cerebro.run()
+
+# 获取分析结果
+time_return = results[0].analyzers.time_return.get_analysis()
+drawdown = results[0].analyzers.drawdown.get_analysis()
+sharpe = results[0].analyzers.sharpe.get_analysis()
+
+# 输出分析结果
+print('Time Return:', time_return)
+print('Drawdown:', drawdown)
+print('Sharpe Ratio:', sharpe)
+
 cerebro.plot(style='candlestick') #用蜡烛图进行绘图
