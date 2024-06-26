@@ -3,3 +3,4 @@
 
 ## Prerequisites
 - Python 3.12.4 or above
+- pip install backtrader

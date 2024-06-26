@@ -19,7 +19,7 @@ class ATR_Regression_Strategy(bt.Strategy):
         self.atr = bt.indicators.AverageTrueRange(self.data, period=self.params.atr_period) #创建ATR(14)
         self.order = None  # 当前无订单
 
-    '''next()为每周期（4h）调用一次的主逻辑'''
+    '''next()为每bar调用一次的主逻辑'''
     def next(self):
         if self.order:  
             return     # 检查是否有订单进行中，如果有，就跳过后续逻辑，避免重复下单
