@@ -24,6 +24,7 @@ def run_backtest():
         cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
 
         results = cerebro.run()
         strat = results[0]
@@ -33,6 +34,7 @@ def run_backtest():
         returns = strat.analyzers.returns.get_analysis()
         sharpe = strat.analyzers.sharpe.get_analysis()
         drawdown = strat.analyzers.drawdown.get_analysis()
+        trades = strat.analyzers.trades.get_analysis()
 
         # 打印总收益、年化收益、回撤、夏普比率
         if 'rtot' in returns:
@@ -43,6 +45,8 @@ def run_backtest():
             print(f"最大回撤: {drawdown['max']['drawdown']:.2f}%")
         if 'sharperatio' in sharpe:
             print(f"夏普比率: {sharpe['sharperatio']:.2f}")
+        if 'total' in trades:
+            print(f"总交易笔数: {trades.total.total}")
 
 if __name__ == '__main__':
     run_backtest()

@@ -37,7 +37,7 @@ class ATR_Regression_Strategy(bt.Strategy):
             return size * (1 + (self.ema[0] - self.data.close[0]) / (self.ema[0] - lower_band))
 
         return 0
-    
+
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             self.order = None
