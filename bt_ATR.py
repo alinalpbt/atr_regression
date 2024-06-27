@@ -19,6 +19,11 @@ class ATR_Regression_Strategy(bt.Strategy):
         self.atr = bt.indicators.AverageTrueRange(self.data, period=self.params.atr_period) #创建ATR(14)
         self.order = None  # 当前无订单
 
+    '''记录'''
+    def log(self, txt, dt=None):
+        dt = dt or self.datas[0].datetime.date(0)
+        print(f'{dt.isoformat()} {txt}')
+
     '''next()为每bar调用一次的主逻辑'''
     def next(self):
         if self.order:  
@@ -28,23 +33,21 @@ class ATR_Regression_Strategy(bt.Strategy):
         target_position = self.get_target_position() #确定目标持仓大小
         
         if target_position != current_position: 
-            self.order = self.order_target_size(target=target_position) # 用 order_target_size 方法调整持仓至目标大小
-    
+            self.log(f'Current Position: {current_position}, Target Position: {target_position}') # 记录
+            self.order = self.order_target_size(target=target_position) # 调整持仓至目标大小
+
     '''计算目标持仓'''
     def get_target_position(self):
+        size = self.broker.get_cash() / self.data.close[0] #size = 资金/close
         upper_band = self.ema[0] + self.params.atr_multiplier * self.atr[0] #计算上轨 ema200+20ATR
         lower_band = self.ema[0] - self.params.atr_multiplier * self.atr[0] #计算下轨 ema200-20ATR
-        size = self.broker.get_cash() / self.data.close[0]  # 理想的全仓大小
-        adjusted_size = size  # 初始化 adjusted_size 为全仓大小
-        
-        if self.data.close[0] == self.ema[0]: #如果收盘价=ema200
-            return size  #则全仓
-        elif self.data.close[0] <= upper_band and self.data.close[0] > self.ema[0]: #如果收盘价在上轨和ema200之间
-            adjusted_size = size * (1 - (self.data.close[0] - self.ema[0]) / (upper_band - self.ema[0]) * 0.5) #修改持仓
-            return adjusted_size #返回修改后的目标持仓
-        elif self.data.close[0] >= lower_band and self.data.close[0] < self.ema[0]: #如果收盘价在下轨和ema200之间
-            adjusted_size = size * (1 + (self.ema[0] - self.data.close[0]) / (self.ema[0] - lower_band) * 1.0) #修改持仓
-            return adjusted_size #返回修改后的目标持仓
+
+        if self.data.close[0] == self.ema[0]: #如果close = ema200
+            return size 
+        elif self.data.close[0] <= upper_band and self.data.close[0] > self.ema[0]: # 如果 ema200<close<=上轨
+            return size * (1 - 0.5 * (self.data.close[0] - self.ema[0]) / (upper_band - self.ema[0]))
+        elif self.data.close[0] >= lower_band and self.data.close[0] < self.ema[0]: # 如果 ema200>close>=下轨
+            return size * (1 + (self.ema[0] - self.data.close[0]) / (self.ema[0] - lower_band))
         return 0
 
     '''订单状态更新'''
@@ -54,80 +57,41 @@ class ATR_Regression_Strategy(bt.Strategy):
 
 
 '''运行回测'''
-# 加载QQQ数据
-data_qqq = bt.feeds.GenericCSVData(
-    dataname='C:/github/atr_regression/results/processed_BATS_QQQ.csv', 
-    datetime=0,
-    open=1,
-    high=2,
-    low=3,
-    close=4,
-    volume=5, #volume数据在第f列
-    dtformat='%Y-%m-%d %H:%M:%S%z'
-)
-
-# 加载SPY数据
-data_spy = bt.feeds.GenericCSVData(
-    dataname='C:/github/atr_regression/results/processed_BATS_SPY.csv',
-    datetime=0,
-    open=1,
-    high=2,
-    low=3,
-    close=4,
-    volume=5,
-    dtformat='%Y-%m-%d %H:%M:%S%z'
-)
-
-# 加载000300数据
-data_000300 = bt.feeds.GenericCSVData(
-    dataname='C:/github/atr_regression/results/processed_SSE_DLY_000300.csv',
-    datetime=0,
-    open=1,
-    high=2,
-    low=3,
-    close=4,
-    volume=8,
-    dtformat='%Y-%m-%d %H:%M:%S%z'
-)
+data_files = {
+    'QQQ': 'processed_BATS_QQQ.csv',
+    'SPY': 'processed_BATS_SPY.csv',
+    '000300': 'processed_SSE_DLY_000300.csv'
+}
 
 cerebro = bt.Cerebro() #初始化 Cerebro
-cerebro.adddata(data_qqq)
-cerebro.adddata(data_spy)
-cerebro.adddata(data_000300) #将前面加载的市场数据添加到Cerebro引擎
-cerebro.addstrategy(ATR_Regression_Strategy) #向Cerebro引擎添加策略
 
+# 添加数据和分析器
+for name, file in data_files.items():
+    data = bt.feeds.GenericCSVData(
+        dataname=f'C:/github/atr_regression/results/{file}',
+        datetime=0, open=1, high=2, low=3, close=4, volume=5,
+        dtformat='%Y-%m-%d %H:%M:%S%z'
+    )
+    cerebro.adddata(data, name=name)
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name=f'sharpe_{name}', timeframe=bt.TimeFrame.Days, data=data)
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name=f'returns_{name}', timeframe=bt.TimeFrame.Years, data=data)
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name=f'drawdown_{name}', data=data)
+
+cerebro.addstrategy(ATR_Regression_Strategy) #加载策略
 cerebro.broker.setcash(10000) # 设置初始资金
-cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)  # 使用全部可用资金进行交易
-
-# 添加资金曲线、最大回撤和年化数据分析器
-cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_qqq})
-cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_spy})
-cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='time_return', timeframe=bt.TimeFrame.Years, _kwargs={'data': data_000300})
-cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days)
+cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)
 
 results = cerebro.run()
 
-# 获取分析结果
-time_return_qqq = results[0].analyzers.time_return.get_analysis()
-time_return_spy = results[1].analyzers.time_return.get_analysis()
-time_return_000300 = results[2].analyzers.time_return.get_analysis()
-drawdown_qqq = results[0].analyzers.drawdown.get_analysis()
-drawdown_spy = results[1].analyzers.drawdown.get_analysis()
-drawdown_000300 = results[2].analyzers.drawdown.get_analysis()
-sharpe_qqq = results[0].analyzers.sharpe.get_analysis()
-sharpe_spy = results[1].analyzers.sharpe.get_analysis()
-sharpe_000300 = results[2].analyzers.sharpe.get_analysis()
+# 获取并打印分析结果
+for name in data_files.keys():
+    sharpe_ratio = results[0].analyzers.getbyname(f'sharpe_{name}').get_analysis()
+    drawdown = results[0].analyzers.getbyname(f'drawdown_{name}').get_analysis()
+    returns = results[0].analyzers.getbyname(f'returns_{name}').get_analysis()
 
-# 保留两位小数并输出分析结果
-formatted_time_return_qqq = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_qqq.items()}
-formatted_time_return_spy = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_spy.items()}
-formatted_time_return_000300 = {key: round(value, 2) if isinstance(value, (int, float)) else value for key, value in time_return_000300.items()}
-
-# 输出分析结果
-# print('Time Return:', time_return)
-print('QQQ数据源的年化回报率:', formatted_time_return_qqq, '\n')
-print('SPY数据源的年化回报率:', formatted_time_return_spy, '\n')
-print('000300数据源的年化回报率:', formatted_time_return_000300, '\n')
-
+    print(f'{name} Sharpe Ratio: {round(sharpe_ratio["sharperatio"], 2)}')
+    print(f'{name} Drawdown: {round(drawdown["max"]["drawdown"], 2)}%')
+    print(f'{name} Total Return: {round(returns["rtot"], 2)}')
+    print(f'{name} Annual Return: {round(returns["rnorm100"], 2)}')
+    
 cerebro.plot(style='candlestick') #用蜡烛图进行绘图
