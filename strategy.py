@@ -24,8 +24,6 @@ class ATR_Regression_Strategy(bt.Strategy):
 
             current_position = self.broker.getposition(data=data).size
             target_position = self.get_target_position(data)
-            # 注释掉以下日志记录代码
-            # self.log(f'{data._name} Current Position: {current_position}, Target Position: {target_position}')
             if target_position != current_position:
                 self.order[data._name] = self.order_target_size(data=data, target=target_position)
 

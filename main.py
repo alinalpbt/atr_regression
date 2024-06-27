@@ -1,5 +1,3 @@
-# main.py
-
 import backtrader as bt
 import pandas as pd
 from strategy import ATR_Regression_Strategy
@@ -24,9 +22,7 @@ def run_backtest():
     cerebro.broker.setcash(config.initial_cash)
     cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)
 
-    print("Running backtest...")
     results = cerebro.run()
-    print("Backtest completed.")
 
     for i, result in enumerate(results):
         print(f'--- Strategy {i+1} ---')
@@ -34,8 +30,6 @@ def run_backtest():
             sharpe_ratio = result.analyzers.getbyname(f'sharpe_{name}').get_analysis()
             drawdown = result.analyzers.getbyname(f'drawdown_{name}').get_analysis()
             returns = result.analyzers.getbyname(f'returns_{name}').get_analysis()
-
-            print(f'{name} Analysis Results: {list(returns.keys())}')  # 打印所有返回的键值对的键
 
             sharpe_ratio_value = round(sharpe_ratio["sharperatio"], 2) if "sharperatio" in sharpe_ratio else None
             drawdown_value = round(drawdown["max"]["drawdown"], 2) if "max" in drawdown and "drawdown" in drawdown["max"] else None
@@ -47,8 +41,7 @@ def run_backtest():
             print(f'{name} Total Return: {total_return}')
             print(f'{name} Annual Return: {annual_return}')
 
-    cerebro.plot(style='candlestick')
-    print("Plotting completed.")
+    # cerebro.plot(style='candlestick')
 
 if __name__ == '__main__':
     run_backtest()
