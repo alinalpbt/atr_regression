@@ -1,47 +1,48 @@
 import backtrader as bt
-import pandas as pd
-from strategy import ATR_Regression_Strategy
 import config
+from strategy import ATR_Regression_Strategy
 
 def run_backtest():
-    cerebro = bt.Cerebro()
+    for name, data_file in config.data_files: 
+        cerebro = bt.Cerebro()
 
-    for name, file in config.data_files.items():
-        data = bt.feeds.GenericCSVData(
-            dataname=f'C:/github/atr_regression/results/{file}',
-            datetime=0, open=1, high=2, low=3, close=4, volume=5,
-            dtformat='%Y-%m-%d %H:%M:%S%z'
+        data = bt.feeds.GenericCSVData( 
+            dataname=data_file,
+            dtformat='%Y-%m-%d %H:%M:%S%z',
+            datetime=0,
+            open=1,
+            high=2,
+            low=3,
+            close=4,
+            volume=5
         )
         data._name = name
-        cerebro.adddata(data)
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name=f'sharpe_{name}')
-        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name=f'returns_{name}')
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name=f'drawdown_{name}')
+        cerebro.adddata(data, name=name)
 
-    cerebro.addstrategy(ATR_Regression_Strategy)
-    cerebro.broker.setcash(config.initial_cash)
-    cerebro.addsizer(bt.sizers.AllInSizerInt, percents=100)
+        cerebro.addstrategy(ATR_Regression_Strategy)
+        cerebro.broker.setcash(config.initial_cash)
+        cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
+        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
 
-    results = cerebro.run()
+        results = cerebro.run()
+        strat = results[0]
 
-    for i, result in enumerate(results):
-        print(f'--- Strategy {i+1} ---')
-        for name in config.data_files.keys():
-            sharpe_ratio = result.analyzers.getbyname(f'sharpe_{name}').get_analysis()
-            drawdown = result.analyzers.getbyname(f'drawdown_{name}').get_analysis()
-            returns = result.analyzers.getbyname(f'returns_{name}').get_analysis()
+        # 获取并打印每个数据源的总收益、年化收益、回撤、夏普比率
+        print(f"\n{name} 分析结果:")
+        returns = strat.analyzers.returns.get_analysis()
+        sharpe = strat.analyzers.sharpe.get_analysis()
+        drawdown = strat.analyzers.drawdown.get_analysis()
 
-            sharpe_ratio_value = round(sharpe_ratio["sharperatio"], 2) if "sharperatio" in sharpe_ratio else None
-            drawdown_value = round(drawdown["max"]["drawdown"], 2) if "max" in drawdown and "drawdown" in drawdown["max"] else None
-            total_return = round(returns.get("rtot", 0), 2) if "rtot" in returns else None
-            annual_return = round(returns.get("rnorm100", 0), 2) if "rnorm100" in returns else None
-
-            print(f'{name} Sharpe Ratio: {sharpe_ratio_value}')
-            print(f'{name} Drawdown: {drawdown_value}%')
-            print(f'{name} Total Return: {total_return}')
-            print(f'{name} Annual Return: {annual_return}')
-
-    # cerebro.plot(style='candlestick')
+        # 打印总收益、年化收益、回撤、夏普比率
+        if 'rtot' in returns:
+            print(f"总收益率: {returns['rtot'] * 100:.2f}%")
+        if 'rnorm100' in returns:
+            print(f"年化收益率: {returns['rnorm100']:.2f}%")
+        if 'max' in drawdown:
+            print(f"最大回撤: {drawdown['max']['drawdown']:.2f}%")
+        if 'sharperatio' in sharpe:
+            print(f"夏普比率: {sharpe['sharperatio']:.2f}")
 
 if __name__ == '__main__':
     run_backtest()
