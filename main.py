@@ -4,7 +4,6 @@ from strategy import ATR_Regression_Strategy
 from texttable import Texttable 
 
 def run_backtest():
-    all_results = []
     headers = ["分析项目"]
 
     for name, data_file in config.data_files: 
@@ -82,7 +81,6 @@ def run_backtest():
         print(f"\n{name} 分析结果:")
         print(table_output.draw())
 
-        
         cerebro.plot(
             style='candlestick',      # 图表样式
             barup='green',            # 上涨柱颜色
