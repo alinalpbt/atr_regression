@@ -17,15 +17,23 @@ def run_backtest():
             volume=5
         )
         data._name = name
-        cerebro.adddata(data, name=name)
 
+        # 添加数据、策略
+        cerebro.adddata(data, name=name)
         cerebro.addstrategy(ATR_Regression_Strategy)
+        
+        # 添加资金、佣金、滑点
         cerebro.broker.setcash(config.initial_cash)
+        cerebro.broker.setcommission(commission=config.commission_rate)
+        cerebro.broker.set_slippage_perc(perc=config.slippage)
+
+        # 添加分析器
         cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
 
+        # 运行回测
         results = cerebro.run()
         strat = results[0]
 
@@ -34,8 +42,10 @@ def run_backtest():
         returns = strat.analyzers.returns.get_analysis()
         sharpe = strat.analyzers.sharpe.get_analysis()
         drawdown = strat.analyzers.drawdown.get_analysis()
-        trades = strat.analyzers.trades.get_analysis()
 
+        # 其余计算（本次策略用不到）
+        # trades = strat.analyzers.trades.get_analysis() # 总交易（open, close, long, short）笔数计算，但因为只调整仓位，只显示一笔
+ 
         # 打印总收益、年化收益、回撤、夏普比率
         if 'rtot' in returns:
             print(f"总收益率: {returns['rtot'] * 100:.2f}%")
@@ -45,8 +55,12 @@ def run_backtest():
             print(f"最大回撤: {drawdown['max']['drawdown']:.2f}%")
         if 'sharperatio' in sharpe:
             print(f"夏普比率: {sharpe['sharperatio']:.2f}")
-        if 'total' in trades:
-            print(f"总交易笔数: {trades.total.total}")
+
+        print(f"总交易笔数: {strat.buy_count + strat.sell_count}")
+
+        # 其余打印
+        # if 'total' in trades:
+        #     print(f"总交易笔数: {trades.total.total}")
 
 if __name__ == '__main__':
     run_backtest()
