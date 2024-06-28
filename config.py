@@ -14,5 +14,8 @@ slippage = 0.001
 strategy_params = {
     'ema_period': 200,
     'atr_period': 14,
-    'atr_multiplier': 20
+    'atr_multiplier': 20,
+    'step': 2,
+    'up_change': 50 / 100,
+    'down_change': 100 / 100
 }
