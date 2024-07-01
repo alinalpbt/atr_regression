@@ -10,9 +10,10 @@ class ATR_Regression_Strategy(bt.Strategy):
         self.order = None
         self.buy_count = 0  
         self.sell_count = 0 
+        self.last_trade_price = None  # 记录上一次交易的价格
 
     def calculate_y(self, x, ema200, atr):
-        atr_multiplier = 20
+        atr_multiplier = config.strategy_params['atr_multiplier']
         if x >= ema200 + atr_multiplier * atr:
             return 50
         elif x <= ema200 - atr_multiplier * atr:
@@ -31,17 +32,28 @@ class ATR_Regression_Strategy(bt.Strategy):
         x = self.data.close[0]
         ema200 = self.ema[0]
         atr = self.atr[0]
+
+        # 如果这是第一次交易，直接记录价格并返回
+        if self.last_trade_price is None:
+            self.last_trade_price = x
+            return
+
+        # 检查价格是否超出上次交易价格的2ATR范围
+        if abs(x - self.last_trade_price) < 2 * atr:
+            return        
+
         y = self.calculate_y(x, ema200, atr)
         target_position = self.broker.get_cash() / x * (y / 100)
-
         current_position = self.broker.getposition(self.data).size
 
         if current_position < target_position:
             self.order = self.buy(size=target_position - current_position)
             self.buy_count += 1
+            self.last_trade_price = x  # 更新最后交易价格
         elif current_position > target_position:
             self.order = self.sell(size=current_position - target_position)
             self.sell_count += 1
+            self.last_trade_price = x  # 更新最后交易价格
 
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin]:
