@@ -15,7 +15,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
         close=4,
         volume=5
     )
-
+    
     # 添加数据、策略
     cerebro.adddata(data, name=name)
     cerebro.addstrategy(strategy_class) # 动态添加策略
@@ -30,21 +30,27 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
-
+    
     # 运行回测
-    return cerebro.run()
+    results = cerebro.run()
+
+    # 获取回测时间
+    start_date = data.num2date(data.datetime.array[0]).strftime('%Y-%m-%d')
+    end_date = data.num2date(data.datetime.array[-1]).strftime('%Y-%m-%d')
+
+    return results, start_date, end_date
 
 
 def run_backtest():
     for name, data_file in config.data_files:
         print(f"\n{name} 分析结果:")
-        
+
         # 运行 BuyAndHoldStrategy 策略
-        buy_and_hold_results = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
+        buy_and_hold_results, start_date, end_date = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
         buy_and_hold_strat = buy_and_hold_results[0]
 
         # 运行 ATR_Regression_Strategy 策略
-        atr_regression_results = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
+        atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
         atr_regression_strat = atr_regression_results[0]
 
         # 获取 BuyAndHoldStrategy 的分析结果
@@ -59,6 +65,9 @@ def run_backtest():
 
         # 计算超额收益
         excess_returns = atr_regression_returns['rtot'] - buy_and_hold_returns['rtot']
+
+        # 打印回测时间
+        print(f"回测时间：从 {start_date} 到 {end_date}")
 
         # 构建数据表格
         table = Texttable()

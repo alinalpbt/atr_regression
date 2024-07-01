@@ -64,10 +64,10 @@ class BuyAndHoldStrategy(bt.Strategy):
     def notify_order(self, order):
         if order.status in [order.Completed]:
             if order.isbuy():
-                # self.log('BUY EXECUTED, Price: %.2f' % order.executed.price)
+                self.log('BUY EXECUTED, Price: %.2f' % order.executed.price)
                 self.buy_executed = True
-            # elif order.issell():
-            #     self.log('SELL EXECUTED, Price: %.2f' % order.executed.price)
+            elif order.issell():
+                self.log('SELL EXECUTED, Price: %.2f' % order.executed.price)
             self.order = None  # 订单完成后清空 order 属性
 
     def stop(self):
