@@ -66,12 +66,19 @@ class BuyAndHoldStrategy(bt.Strategy):
         self.sell_count = 0
         self.order = None  
         self.buy_executed = False
+        
+        # 初始化权益曲线列表
+        self.equity_curve = []
 
     def next(self):
         if not self.position and not self.buy_executed:
             self.order = self.buy()  # 发起买入订单
             self.buy_count += 1  # 买入次数加一
             self.buy_executed = True
+
+        # 记录当前收盘价
+        current_close = self.data.close[0]
+        self.equity_curve.append(current_close)
 
     def notify_order(self, order):
         if order.status in [order.Completed]:
