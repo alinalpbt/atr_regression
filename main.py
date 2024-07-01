@@ -36,27 +36,52 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
 
 
 def run_backtest():
-    for name, data_file in config.data_files: 
-        for strategy in [ATR_Regression_Strategy, BuyAndHoldStrategy]:
-            print(f"\n{name} - {strategy.__name__} 分析结果:")
-            results = add_data_and_run_strategy(strategy, data_file, name)
-            strat = results[0]
+    for name, data_file in config.data_files:
+        print(f"\n{name} 分析结果:")
+        
+        # 运行 BuyAndHoldStrategy 策略
+        buy_and_hold_results = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
+        buy_and_hold_strat = buy_and_hold_results[0]
 
-            # 获取分析器结果
-            returns = strat.analyzers.returns.get_analysis()
-            sharpe = strat.analyzers.sharpe.get_analysis()
-            drawdown = strat.analyzers.drawdown.get_analysis()
-            # trades = strat.analyzers.trades.get_analysis()
+        # 运行 ATR_Regression_Strategy 策略
+        atr_regression_results = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
+        atr_regression_strat = atr_regression_results[0]
 
-            # 构建数据表格（始终持仓的策略）
-            table = [
-                ["分析项目", "结果"],
-                ["总收益率", f"{returns['rtot'] * 100:.2f}%" if 'rtot' in returns else "N/A"],
-                ["年化收益率", f"{returns['rnorm100']:.2f}%" if 'rnorm100' in returns else "N/A"],
-                ["最大回撤", f"{drawdown['max']['drawdown']:.2f}%" if 'max' in drawdown else "N/A"],
-                ["夏普比率", f"{sharpe['sharperatio']:.2f}" if sharpe['sharperatio'] is not None else "N/A"],
-                ["总交易笔数", strat.buy_count + strat.sell_count]
-        ]
+        # 获取 BuyAndHoldStrategy 的分析结果
+        buy_and_hold_returns = buy_and_hold_strat.analyzers.returns.get_analysis()
+        buy_and_hold_drawdown = buy_and_hold_strat.analyzers.drawdown.get_analysis()
+        buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe.get_analysis()
+
+        # 获取 ATR_Regression_Strategy 的分析结果
+        atr_regression_returns = atr_regression_strat.analyzers.returns.get_analysis()
+        atr_regression_drawdown = atr_regression_strat.analyzers.drawdown.get_analysis()
+        atr_regression_sharpe = atr_regression_strat.analyzers.sharpe.get_analysis()
+
+        # 计算超额收益
+        excess_returns = atr_regression_returns['rtot'] - buy_and_hold_returns['rtot']
+
+        # 构建数据表格
+        table = Texttable()
+        table.add_rows([
+            ["分析项目", "ATR_Regression", "BuyAndHold", "超额收益"],
+            ["总收益率", f"{atr_regression_returns['rtot'] * 100:.2f}%" if 'rtot' in atr_regression_returns else "N/A",
+                            f"{buy_and_hold_returns['rtot'] * 100:.2f}%" if 'rtot' in buy_and_hold_returns else "N/A",
+                            f"{excess_returns * 100:.2f}%" if excess_returns else "N/A"],
+            ["年化收益率", f"{atr_regression_returns['rnorm100']:.2f}%" if 'rnorm100' in atr_regression_returns else "N/A",
+                            f"{buy_and_hold_returns['rnorm100']:.2f}%" if 'rnorm100' in buy_and_hold_returns else "N/A", 
+                            " "],
+            ["最大回撤", f"{atr_regression_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A",
+                            f"{buy_and_hold_drawdown['max']['drawdown']:.2f}%" if 'max' in buy_and_hold_drawdown else "N/A", 
+                            " "],
+            ["夏普比率", f"{atr_regression_sharpe['sharperatio']:.2f}" if atr_regression_sharpe['sharperatio'] is not None else "N/A",
+                         f"{buy_and_hold_sharpe['sharperatio']:.2f}" if buy_and_hold_sharpe['sharperatio'] is not None else "N/A", 
+                         " "],
+            ["总交易笔数", atr_regression_strat.buy_count + atr_regression_strat.sell_count,
+                          buy_and_hold_strat.buy_count + buy_and_hold_strat.sell_count,
+                          " "]
+        ])
+
+        print(table.draw())
 
             # # 构建数据表格（CTA的策略）
             # table = [
@@ -74,12 +99,6 @@ def run_backtest():
             #     ["最长连续盈利交易数", trades.streak.won.longest if hasattr(trades.streak.won, 'longest') else "N/A"],
             #     ["最长连续亏损交易数", trades.streak.lost.longest if hasattr(trades.streak.lost, 'longest') else "N/A"]
             # ]
-
-            table_output = Texttable()
-            table_output.add_rows(table)
-            
-            print(f"\n{name} 分析结果:")
-            print(table_output.draw())
 
             # cerebro.plot(
             #     style='candlestick',      # 图表样式

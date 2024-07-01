@@ -8,7 +8,7 @@ data_files = [
 # 资金、佣金、滑点设置
 initial_cash = 10000
 commission_rate = 0.0005
-slippage = 0.001
+slippage = 0.0
 
 # 策略参数
 strategy_params = {

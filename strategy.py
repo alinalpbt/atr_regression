@@ -11,49 +11,37 @@ class ATR_Regression_Strategy(bt.Strategy):
         self.buy_count = 0  
         self.sell_count = 0 
 
+    def calculate_y(self, x, ema200, atr):
+        atr_multiplier = 20
+        if x >= ema200 + atr_multiplier * atr:
+            return 50
+        elif x <= ema200 - atr_multiplier * atr:
+            return 200
+        else:
+            delta_atr = (x - ema200) / atr
+            if delta_atr > 0:
+                return 100 - 5 * (delta_atr // 2)
+            else:
+                return 100 + 10 * (abs(delta_atr) // 2)
+
     def next(self):
         if self.order:
             return
 
-        # 获取当前持仓和目标持仓
-        current_position = self.broker.getposition(self.data).size
-        target_position = self.get_target_position()
+        x = self.data.close[0]
+        ema200 = self.ema[0]
+        atr = self.atr[0]
+        y = self.calculate_y(x, ema200, atr)
+        target_position = self.broker.get_cash() / x * (y / 100)
 
-        # 如果当前持仓与目标持仓不同，执行买入操作
+        current_position = self.broker.getposition(self.data).size
+
         if current_position < target_position:
             self.order = self.buy(size=target_position - current_position)
-            self.buy_count += 1  
+            self.buy_count += 1
         elif current_position > target_position:
             self.order = self.sell(size=current_position - target_position)
             self.sell_count += 1
-
-    def get_target_position(self):
-        close = self.data.close[0]
-        ema = self.ema[0]
-        atr = self.atr[0]
-        atr_multiplier = config.strategy_params['atr_multiplier']
-        step = config.strategy_params['step']
-
-        upper_band = ema + atr_multiplier * atr
-        lower_band = ema - atr_multiplier * atr
-
-        # 默认持仓量
-        capital_investment = 1.0
-
-        if close >= upper_band:
-            capital_investment = 0.5
-        elif close <= lower_band:
-            capital_investment = 2.0
-        elif ema < close < upper_band:
-            for i in range(step, atr_multiplier, step):
-                capital_investment = 1.0 - 0.5 * i / atr_multiplier
-                break
-        elif lower_band < close < ema:
-            for i in range(step, atr_multiplier, step):
-                capital_investment = 1.0 + i / atr_multiplier
-                break
-
-        return self.broker.get_cash() / close * capital_investment
 
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin]:
@@ -64,16 +52,29 @@ class BuyAndHoldStrategy(bt.Strategy):
         # 初始化买卖次数计数器
         self.buy_count = 0
         self.sell_count = 0
+        self.order = None  
+        self.buy_executed = False
 
     def next(self):
-        if not self.position:
-            self.order = self.buy()
-            self.log('BUY EXECUTED, Price: %.2f' % self.data.close[0])
+        if not self.position and not self.buy_executed:
+            self.order = self.buy()  # 发起买入订单
+            self.buy_count += 1  # 买入次数加一
+            self.buy_executed = True
+
+    def notify_order(self, order):
+        if order.status in [order.Completed]:
+            if order.isbuy():
+                # self.log('BUY EXECUTED, Price: %.2f' % order.executed.price)
+                self.buy_executed = True
+            # elif order.issell():
+            #     self.log('SELL EXECUTED, Price: %.2f' % order.executed.price)
+            self.order = None  # 订单完成后清空 order 属性
 
     def stop(self):
         if self.position:
-            self.order = self.sell()
-            self.log('SELL EXECUTED, Price: %.2f' % self.data.close[0])
+            self.order = self.sell()  # 发起卖出订单
+            self.sell_count += 1  # 卖出次数加一
+            # self.log('SELL EXECUTED, Price: %.2f' % self.data.close[0])
 
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)
