@@ -58,3 +58,23 @@ class ATR_Regression_Strategy(bt.Strategy):
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             self.order = None
+
+class BuyAndHoldStrategy(bt.Strategy):
+    def __init__(self):
+        # 初始化买卖次数计数器
+        self.buy_count = 0
+        self.sell_count = 0
+
+    def next(self):
+        if not self.position:
+            self.order = self.buy()
+            self.log('BUY EXECUTED, Price: %.2f' % self.data.close[0])
+
+    def stop(self):
+        if self.position:
+            self.order = self.sell()
+            self.log('SELL EXECUTED, Price: %.2f' % self.data.close[0])
+
+    def log(self, txt, dt=None):
+        dt = dt or self.datas[0].datetime.date(0)
+        print('%s, %s' % (dt.isoformat(), txt))
