@@ -67,12 +67,6 @@ class BuyAndHoldStrategy(bt.Strategy):
         self.order = None  
         self.buy_executed = False
         
-        # # 初始化权益曲线列表
-        # self.equity_curve = []
-
-        self.trade_log_file = open('trades.csv', 'w')  # 打开文件，'w' 表示写入模式
-        self.trade_log_file.write('Datetime,Action,Price,Size,Value\n')  # 写入表头
-        
     def next(self):
         # if len(self) <= 2:  # 打印前两根 K 线的信息
         #     print(f"当前索引: {len(self)}, 日期时间: {self.data.datetime.datetime(0)}, 开盘价: {self.data.open[0]}, 收盘价: {self.data.close[0]}")
@@ -81,10 +75,6 @@ class BuyAndHoldStrategy(bt.Strategy):
             self.order = self.buy()
             self.buy_count += 1
             self.buy_executed = True
-
-        # # 记录当前收盘价
-        # current_close = self.data.close[0]
-        # self.equity_curve.append(current_close)
 
     def notify_order(self, order):
         if order.status in [order.Completed]:
@@ -96,9 +86,9 @@ class BuyAndHoldStrategy(bt.Strategy):
 
     def stop(self):
         if self.position:
-            self.order = self.sell()  # 发起卖出订单
-            self.sell_count += 1  # 卖出次数加一
-            # self.log('SELL EXECUTED, Price: %.2f' % self.data.close[0])
+            self.order = self.sell()
+            self.sell_count += 1
+        # self.trade_log_file.close()  # 关闭文件
 
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)

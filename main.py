@@ -3,7 +3,15 @@ import config
 from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
 from texttable import Texttable 
 from my_data import MyCSVData
-    
+from LTanalyzer import LongTermTradeAnalyzer 
+import json
+import os
+
+# 确保结果目录存在
+output_dir = 'data'
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
 def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro = bt.Cerebro()
     data = MyCSVData(  # 使用自定义数据源类
@@ -30,7 +38,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
+    cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
     
     # 运行回测
     results = cerebro.run()
@@ -41,12 +49,20 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
 
     return results, start_date, end_date
 
-# def calculate_max_drawdown(equity_curve):
-#     max_drawdown = 0
-#     peak = max(equity_curve)
-#     trough = min(equity_curve)
-#     max_drawdown = (peak - trough) / peak * 100
-#     return max_drawdown
+def log_trades(trades, file_name):
+    file_path = os.path.join(output_dir, file_name)
+    print(f"File path: {file_path}")  # 打印文件路径
+
+    try:
+        with open(file_path, 'w') as f:
+            f.write("Date,IsBuy,Price,Size,Value,PnL\n")  # 写入表头
+            for trade in trades:
+                log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]}\n'
+                f.write(log_str)
+                print(f"Logging trade: {log_str}")  # 打印日志信息
+        print(f"Successfully wrote to {file_path}")
+    except Exception as e:
+        print(f"Error writing to {file_path}: {e}")
 
 def run_backtest():
     for name, data_file in config.data_files:
@@ -73,14 +89,20 @@ def run_backtest():
         # 计算超额收益
         excess_returns = atr_regression_returns['rtot'] - buy_and_hold_returns['rtot']
 
-        # # 获取 BuyAndHoldStrategy 的权益曲线
-        # equity_curve = buy_and_hold_strat.equity_curve
-        # buy_and_hold_max_drawdown = calculate_max_drawdown(equity_curve)
-
         # 打印回测时间
         print(f"回测时间：从 {start_date} 到 {end_date}")
 
-        # 构建数据表格
+        buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
+        atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
+
+        print(f"Buy and Hold Trades: {buy_and_hold_trades}")  # 打印交易信息
+        print(f"ATR Regression Trades: {atr_regression_trades}")  # 打印交易信息
+
+        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv')
+        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv')
+
+
+
         table = Texttable()
         table.add_rows([
             ["分析项目", "ATR_Regression", "BuyAndHold", "超额收益"],
@@ -93,9 +115,6 @@ def run_backtest():
             ["最大回撤", f"{atr_regression_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A",
             f"{buy_and_hold_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A", 
             " "],
-            # ["最大回撤", f"{atr_regression_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A",
-            #                 f"{buy_and_hold_max_drawdown:.2f}%" if buy_and_hold_max_drawdown is not None else "N/A", 
-            #                 " "],
             ["夏普比率", f"{atr_regression_sharpe['sharperatio']:.2f}" if atr_regression_sharpe['sharperatio'] is not None else "N/A",
                          f"{buy_and_hold_sharpe['sharperatio']:.2f}" if buy_and_hold_sharpe['sharperatio'] is not None else "N/A", 
                          " "],
@@ -105,23 +124,6 @@ def run_backtest():
         ])
 
         print(table.draw())
-
-            # # 构建数据表格（CTA的策略）
-            # table = [
-            #     ["分析项目", "结果"],
-            #     ["总收益率", f"{returns['rtot'] * 100:.2f}%" if 'rtot' in returns else "N/A"],
-            #     ["年化收益率", f"{returns['rnorm100']:.2f}%" if 'rnorm100' in returns else "N/A"],
-            #     ["最大回撤", f"{drawdown['max']['drawdown']:.2f}%" if 'max' in drawdown else "N/A"],
-            #     ["夏普比率", f"{sharpe['sharperatio']:.2f}" if 'sharperatio' in sharpe else "N/A"],
-            #     ["总交易笔数", trades.total]
-            #     ["总关闭交易数", trades.total.closed if hasattr(trades.total, 'closed') else "N/A"],
-            #     ["总盈利交易数", trades.won.total if hasattr(trades.won, 'total') else "N/A"],
-            #     ["总亏损交易数", trades.lost.total if hasattr(trades.lost, 'total') else "N/A"],
-            #     ["平均每笔盈利", f"{trades.won.pnl.average:.2f}" if hasattr(trades.won.pnl, 'average') else "N/A"],
-            #     ["平均每笔亏损", f"{trades.lost.pnl.average:.2f}" if hasattr(trades.lost.pnl, 'average') else "N/A"],
-            #     ["最长连续盈利交易数", trades.streak.won.longest if hasattr(trades.streak.won, 'longest') else "N/A"],
-            #     ["最长连续亏损交易数", trades.streak.lost.longest if hasattr(trades.streak.lost, 'longest') else "N/A"]
-            # ]
 
             # cerebro.plot(
             #     style='candlestick',      # 图表样式
