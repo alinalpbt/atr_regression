@@ -2,12 +2,13 @@ import backtrader as bt
 import config
 from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
 from texttable import Texttable 
-
+from my_data import MyCSVData
+    
 def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro = bt.Cerebro()
-    data = bt.feeds.GenericCSVData(
+    data = MyCSVData(  # 使用自定义数据源类
         dataname=data_file,
-        dtformat='%Y-%m-%d %H:%M:%S%z',
+        dtformat='%Y/%m/%d %H:%M',
         datetime=0,
         open=1,
         high=2,

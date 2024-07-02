@@ -71,9 +71,12 @@ class BuyAndHoldStrategy(bt.Strategy):
         self.equity_curve = []
 
     def next(self):
-        if not self.position and not self.buy_executed:
-            self.order = self.buy()  # 发起买入订单
-            self.buy_count += 1  # 买入次数加一
+        # if len(self) <= 2:  # 打印前两根 K 线的信息
+        #     print(f"当前索引: {len(self)}, 日期时间: {self.data.datetime.datetime(0)}, 开盘价: {self.data.open[0]}, 收盘价: {self.data.close[0]}")
+        
+        if len(self) == 1 and not self.position:  # 在第一个可交易的 bar 买入
+            self.order = self.buy()
+            self.buy_count += 1
             self.buy_executed = True
 
         # 记录当前收盘价
@@ -84,10 +87,9 @@ class BuyAndHoldStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, Price: %.2f' % order.executed.price)
-                self.buy_executed = True
             elif order.issell():
                 self.log('SELL EXECUTED, Price: %.2f' % order.executed.price)
-            self.order = None  # 订单完成后清空 order 属性
+            self.order = None
 
     def stop(self):
         if self.position:
