@@ -48,10 +48,22 @@ class ATR_Regression_Strategy(bt.Strategy):
 
         if current_position < target_position:
             self.order = self.buy(size=target_position - current_position)
+            self.order.x = x
+            self.order.ema200 = ema200
+            self.order.atr = atr
+            self.order.y = y
+            self.order.target_position = target_position
+            self.order.current_position = current_position
             self.buy_count += 1
             self.last_trade_price = x  # 更新最后交易价格
         elif current_position > target_position:
             self.order = self.sell(size=current_position - target_position)
+            self.order.x = x
+            self.order.ema200 = ema200
+            self.order.atr = atr
+            self.order.y = y
+            self.order.target_position = target_position
+            self.order.current_position = current_position
             self.sell_count += 1
             self.last_trade_price = x  # 更新最后交易价格
 

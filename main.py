@@ -49,15 +49,22 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
 
     return results, start_date, end_date
 
-def log_trades(trades, file_name):
+def log_trades(trades, file_name, strategy_name):
     file_path = os.path.join(output_dir, file_name)
     print(f"File path: {file_path}")  # 打印文件路径
 
     try:
         with open(file_path, 'w') as f:
-            f.write("Date,IsBuy,Price,Size,Value,PnL\n")  # 写入表头
+            if strategy_name == 'ATR_Regression_Strategy':
+                f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition\n")  # 写入表头
+            else:
+                f.write("Date,IsBuy,Price,Size,Value,PnL\n")  # 写入表头
+            
             for trade in trades:
-                log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]}\n'
+                if strategy_name == 'ATR_Regression_Strategy':
+                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["x"]},{trade["ema200"]},{trade["atr"]},{trade["y"]},{trade["target_position"]},{trade["current_position"]}\n'
+                else:
+                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]}\n'
                 f.write(log_str)
                 print(f"Logging trade: {log_str}")  # 打印日志信息
         print(f"Successfully wrote to {file_path}")
@@ -98,10 +105,8 @@ def run_backtest():
         print(f"Buy and Hold Trades: {buy_and_hold_trades}")  # 打印交易信息
         print(f"ATR Regression Trades: {atr_regression_trades}")  # 打印交易信息
 
-        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv')
-        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv')
-
-
+        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
+        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
 
         table = Texttable()
         table.add_rows([
