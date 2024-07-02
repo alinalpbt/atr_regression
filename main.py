@@ -51,7 +51,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
 
 def log_trades(trades, file_name, strategy_name):
     file_path = os.path.join(output_dir, file_name)
-    print(f"File path: {file_path}")  # 打印文件路径
+    # print(f"File path: {file_path}")  # 打印文件路径
 
     try:
         with open(file_path, 'w') as f:
@@ -66,7 +66,7 @@ def log_trades(trades, file_name, strategy_name):
                 else:
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]}\n'
                 f.write(log_str)
-                print(f"Logging trade: {log_str}")  # 打印日志信息
+                # print(f"Logging trade: {log_str}")  # 打印日志信息
         print(f"Successfully wrote to {file_path}")
     except Exception as e:
         print(f"Error writing to {file_path}: {e}")
@@ -102,8 +102,8 @@ def run_backtest():
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
         atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
 
-        print(f"Buy and Hold Trades: {buy_and_hold_trades}")  # 打印交易信息
-        print(f"ATR Regression Trades: {atr_regression_trades}")  # 打印交易信息
+        # print(f"Buy and Hold Trades: {buy_and_hold_trades}")  # 打印交易信息
+        # print(f"ATR Regression Trades: {atr_regression_trades}")  # 打印交易信息
 
         log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
         log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
