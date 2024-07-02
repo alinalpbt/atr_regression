@@ -41,12 +41,12 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
 
     return results, start_date, end_date
 
-def calculate_max_drawdown(equity_curve):
-    max_drawdown = 0
-    peak = max(equity_curve)
-    trough = min(equity_curve)
-    max_drawdown = (peak - trough) / peak * 100
-    return max_drawdown
+# def calculate_max_drawdown(equity_curve):
+#     max_drawdown = 0
+#     peak = max(equity_curve)
+#     trough = min(equity_curve)
+#     max_drawdown = (peak - trough) / peak * 100
+#     return max_drawdown
 
 def run_backtest():
     for name, data_file in config.data_files:
@@ -63,6 +63,7 @@ def run_backtest():
         # 获取 BuyAndHoldStrategy 的分析结果
         buy_and_hold_returns = buy_and_hold_strat.analyzers.returns.get_analysis()
         buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe.get_analysis()
+        buy_and_hold_drawdown = buy_and_hold_strat.analyzers.drawdown.get_analysis()
 
         # 获取 ATR_Regression_Strategy 的分析结果
         atr_regression_returns = atr_regression_strat.analyzers.returns.get_analysis()
@@ -72,9 +73,9 @@ def run_backtest():
         # 计算超额收益
         excess_returns = atr_regression_returns['rtot'] - buy_and_hold_returns['rtot']
 
-        # 获取 BuyAndHoldStrategy 的权益曲线
-        equity_curve = buy_and_hold_strat.equity_curve
-        buy_and_hold_max_drawdown = calculate_max_drawdown(equity_curve)
+        # # 获取 BuyAndHoldStrategy 的权益曲线
+        # equity_curve = buy_and_hold_strat.equity_curve
+        # buy_and_hold_max_drawdown = calculate_max_drawdown(equity_curve)
 
         # 打印回测时间
         print(f"回测时间：从 {start_date} 到 {end_date}")
@@ -90,8 +91,11 @@ def run_backtest():
                             f"{buy_and_hold_returns['rnorm100']:.2f}%" if 'rnorm100' in buy_and_hold_returns else "N/A", 
                             " "],
             ["最大回撤", f"{atr_regression_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A",
-                            f"{buy_and_hold_max_drawdown:.2f}%" if buy_and_hold_max_drawdown is not None else "N/A", 
-                            " "],
+            f"{buy_and_hold_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A", 
+            " "],
+            # ["最大回撤", f"{atr_regression_drawdown['max']['drawdown']:.2f}%" if 'max' in atr_regression_drawdown else "N/A",
+            #                 f"{buy_and_hold_max_drawdown:.2f}%" if buy_and_hold_max_drawdown is not None else "N/A", 
+            #                 " "],
             ["夏普比率", f"{atr_regression_sharpe['sharperatio']:.2f}" if atr_regression_sharpe['sharperatio'] is not None else "N/A",
                          f"{buy_and_hold_sharpe['sharperatio']:.2f}" if buy_and_hold_sharpe['sharperatio'] is not None else "N/A", 
                          " "],
