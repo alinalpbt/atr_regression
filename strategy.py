@@ -28,7 +28,11 @@ class ATR_Regression_Strategy(bt.Strategy):
     def next(self):
         if self.order:
             return
-
+        
+        # 只有在均线计算完成后才开始交易
+        if len(self.data) < self.params.ema_period:
+            return
+        
         x = self.data.close[0]
         ema200 = self.ema[0]
         atr = self.atr[0]
@@ -48,28 +52,28 @@ class ATR_Regression_Strategy(bt.Strategy):
 
         if current_position < target_position:
             self.order = self.buy(size=target_position - current_position)
-            self.order.x = x
-            self.order.ema200 = ema200
-            self.order.atr = atr
-            self.order.y = y
-            self.order.target_position = target_position
-            self.order.current_position = current_position
+            self.order.addinfo(x=x, ema200=ema200, atr=atr, y=y, target_position=target_position, current_position=current_position)
             self.buy_count += 1
             self.last_trade_price = x  # 更新最后交易价格
         elif current_position > target_position:
             self.order = self.sell(size=current_position - target_position)
-            self.order.x = x
-            self.order.ema200 = ema200
-            self.order.atr = atr
-            self.order.y = y
-            self.order.target_position = target_position
-            self.order.current_position = current_position
+            self.order.addinfo(x=x, ema200=ema200, atr=atr, y=y, target_position=target_position, current_position=current_position)
             self.sell_count += 1
             self.last_trade_price = x  # 更新最后交易价格
 
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             self.order = None
+            # 将订单完成信息输出到文件
+            with open('order_log.txt', 'a') as f:
+                f.write(f"Order completed: {order}\n")
+                f.write(f"Buy count: {self.buy_count}, Sell count: {self.sell_count}\n")
+
+    def notify_trade(self, trade):
+        # 只在交易完成时输出日志
+        if trade.isclosed:
+            with open('order_log.txt', 'a') as f:
+                f.write(f"Trade closed: PnL Gross {trade.pnl} Net {trade.pnlcomm}\n")
 
 class BuyAndHoldStrategy(bt.Strategy):
     def __init__(self):

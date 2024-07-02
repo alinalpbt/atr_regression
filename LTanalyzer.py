@@ -10,7 +10,7 @@ class LongTermTradeAnalyzer(bt.Analyzer):
 
     def notify_order(self, order):
         if order.status in [order.Completed]:
-            self.trades.append({
+            trade_info = {
                 'date': bt.num2date(order.executed.dt),
                 'price': order.executed.price,
                 'size': order.executed.size,
@@ -18,13 +18,14 @@ class LongTermTradeAnalyzer(bt.Analyzer):
                 'pnl': order.executed.pnl,
                 'isbuy': order.isbuy(),
                 'closed': False,
-                'x': getattr(order, 'x', None),
-                'ema200': getattr(order, 'ema200', None),
-                'atr': getattr(order, 'atr', None),
-                'y': getattr(order, 'y', None),
-                'target_position': getattr(order, 'target_position', None),
-                'current_position': getattr(order, 'current_position', None)
-            })
+                'x': order.info.get('x', None),
+                'ema200': order.info.get('ema200', None),
+                'atr': order.info.get('atr', None),
+                'y': order.info.get('y', None),
+                'target_position': order.info.get('target_position', None),
+                'current_position': order.info.get('current_position', None)
+            }
+            self.trades.append(trade_info)
 
     def get_analysis(self):
         return self.trades
