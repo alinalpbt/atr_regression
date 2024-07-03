@@ -16,7 +16,7 @@ class MyCSVData(bt.feeds.GenericCSVData):
         ('volume', 5),
     )
 
-    # 因为数据是非连续的，这里为了减少数据的处理，增加用行数指代bar的位置的逻辑
+    # 因为我们的数据是非连续的（节假日信息空缺），这里为了减少数据的处理，增加用行数指代bar的位置的逻辑
     def __init__(self, *args, **kwargs):
         super(MyCSVData, self).__init__(*args, **kwargs)
         self.total_lines = 0  # 初始化总行数为0

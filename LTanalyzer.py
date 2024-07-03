@@ -41,21 +41,4 @@ class LongTermTradeAnalyzer(bt.Analyzer):
                     break
 
     def get_analysis(self):
-        total_return = sum(self.pnl)
-        if self.strategy.broker.startingcash > 0:  # 防止除以零
-            total_return_percent = total_return / self.strategy.broker.startingcash
-        else:
-            total_return_percent = 0
-        
-        annual_return = (1 + total_return_percent) ** (365.0 / len(self.pnl)) - 1 if len(self.pnl) > 0 else 0
-        max_drawdown = min(self.pnl) if self.pnl else 0
-        sharpe_ratio = np.mean(self.pnl) / np.std(self.pnl) if len(self.pnl) > 1 and np.std(self.pnl) != 0 else 0
-
-        return {
-            'trades': self.trades,
-            'total_return': total_return,
-            'total_return_percent': total_return_percent,
-            'annual_return': annual_return,
-            'max_drawdown': max_drawdown,
-            'sharpe_ratio': sharpe_ratio,
-        }
+        return self.trades
