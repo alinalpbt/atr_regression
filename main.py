@@ -77,11 +77,9 @@ def run_backtest():
     for name, data_file in config.data_files:
         print(f"\n{name} 分析结果:")
 
-        # 运行 BuyAndHoldStrategy 策略
+        # 运行策略
         buy_and_hold_results, start_date, end_date = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
         buy_and_hold_strat = buy_and_hold_results[0]
-
-        # 运行 ATR_Regression_Strategy 策略
         atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
         atr_regression_strat = atr_regression_results[0]
 
