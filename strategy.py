@@ -17,19 +17,21 @@ class ATR_Regression_Strategy(bt.Strategy):
         self.last_trade_price = None  # 记录上一次交易的价格
 
     def calculate_y(self, x, ema200, atr):
+        # 计算目标仓位比例 y
         atr_multiplier = config.strategy_params['atr_multiplier']
         if x >= ema200 + atr_multiplier * atr:
-            return 50
+            return 50  # 如果价格x高于 ema200 + atr_multiplier * atr, 返回50%
         elif x <= ema200 - atr_multiplier * atr:
-            return 200
+            return 200  # 如果价格x低于 ema200 - atr_multiplier * atr, 返回200%
         else:
-            delta_atr = (x - ema200) / atr
-            if delta_atr > 0:
-                return 100 - 5 * (delta_atr // 2)
+            delta_atr = (x - ema200) / atr  # 当前价格与均线之间的差值相对于 ATR 的倍数
+            if delta_atr > 0: # 如果delta为正，则价格高于ema200，目标仓位要减少
+                return 100 - 5 * (delta_atr // 2) # 每2个atr，仓位减少5%
             else:
-                return 100 + 10 * (abs(delta_atr) // 2)
+                return 100 + 10 * (abs(delta_atr) // 2) # 每2个atr，仓位增加10%
 
     def next(self):
+        # 检查是否有活动订单，如果有则跳过
         if self.order:
             return
         
@@ -37,39 +39,45 @@ class ATR_Regression_Strategy(bt.Strategy):
         if len(self.data) < self.params.ema_period:
             return
         
-        x = self.data.close[0]
-        ema200 = self.ema[0]
-        atr = self.atr[0]
+        x = self.data.close[0] # 当前收盘价
+        ema200 = self.ema[0] # 当前 ema 值
+        atr = self.atr[0] # 当前 atr 值
 
         # 如果这是第一次交易，直接记录价格并返回
         if self.last_trade_price is None:
             self.last_trade_price = x
             return
 
-        # 检查价格是否超出上次交易价格的2ATR范围
+        # 检查价格是否超出上次交易价格的 2 ATR 范围
         if abs(x - self.last_trade_price) < 2 * atr:
             return        
 
-        y = self.calculate_y(x, ema200, atr)
-        target_position = self.broker.get_cash() / x * (y / 100)
-        current_position = self.broker.getposition(self.data).size
+        y = self.calculate_y(x, ema200, atr)  # 目标仓位比例
+        target_position = config.initial_cash / x * (y / 100) # 计算目标持仓数量
+        current_position = self.broker.getposition(self.data).size # 获取当前持仓数量
 
+        # 如果当前持仓小于目标持仓，则买入差额部分
         if current_position < target_position:
             self.order = self.buy(size=target_position - current_position)
             self.order.addinfo(x=x, ema200=ema200, atr=atr, y=y, target_position=target_position, current_position=current_position)
             self.last_trade_price = x  # 更新最后交易价格
+
+        # 如果当前持仓大于目标持仓，则卖出差额部分
         elif current_position > target_position:
             self.order = self.sell(size=current_position - target_position)
             self.order.addinfo(x=x, ema200=ema200, atr=atr, y=y, target_position=target_position, current_position=current_position)
             self.last_trade_price = x  # 更新最后交易价格
 
     def notify_order(self, order):
+        # 处理订单状态变化
         if order.status in [order.Completed]:
+            # 记录买卖次数
             if order.isbuy():
                 self.buy_count += 1
             elif order.issell():
                 self.sell_count += 1
 
+        # 如果订单完成、取消或出现保证金问题，则重置当前订单
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             self.order = None
 
