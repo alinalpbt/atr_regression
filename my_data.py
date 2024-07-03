@@ -16,8 +16,19 @@ class MyCSVData(bt.feeds.GenericCSVData):
         ('volume', 5),
     )
 
+    # 因为数据是非连续的，这里为了减少数据的处理，增加用行数指代bar的位置的逻辑
+    def __init__(self, *args, **kwargs):
+        super(MyCSVData, self).__init__(*args, **kwargs)
+        self.total_lines = 0  # 初始化总行数为0
+
+    def start(self):
+        super().start()
+        # 打开文件，计算行数
+        with open(self.p.dataname, 'r') as f:
+            self.total_lines = sum(1 for line in f)
+
+    # 手动解析日期时间信息
     def _loadline(self, linetokens):
-        # 手动解析日期时间信息
         dtfield = linetokens[self.p.datetime]
         dt = datetime.strptime(dtfield, self.p.dtformat)
 
@@ -30,3 +41,6 @@ class MyCSVData(bt.feeds.GenericCSVData):
         self.lines.volume[0] = float(linetokens[self.p.volume])
 
         return True
+    
+
+

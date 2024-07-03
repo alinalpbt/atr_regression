@@ -1,3 +1,7 @@
+'''
+用于修改参数
+'''
+
 # 数据文件
 data_files = [
     ("QQQ", "C:/github/atr_regression/results/processed_BATS_QQQ.csv"),

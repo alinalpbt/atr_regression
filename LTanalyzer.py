@@ -27,5 +27,13 @@ class LongTermTradeAnalyzer(bt.Analyzer):
             }
             self.trades.append(trade_info)
 
+    def notify_trade(self, trade):
+        if trade.isclosed:
+            for t in self.trades:
+                if t['date'] == bt.num2date(trade.dtclose):
+                    t['closed'] = True
+                    t['pnl'] = trade.pnl
+                    break
+
     def get_analysis(self):
         return self.trades

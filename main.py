@@ -7,6 +7,10 @@ from LTanalyzer import LongTermTradeAnalyzer
 import json
 import os
 
+'''
+运行回测
+'''
+
 # 确保结果目录存在
 output_dir = 'data'
 if not os.path.exists(output_dir):
@@ -65,7 +69,7 @@ def log_trades(trades, file_name, strategy_name):
                 else:
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["closed"]}\n'
                 f.write(log_str)
-        print(f"Successfully wrote to {file_path}")
+        # print(f"Successfully wrote to {file_path}")
     except Exception as e:
         print(f"Error writing to {file_path}: {e}")
 
