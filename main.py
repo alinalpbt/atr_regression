@@ -55,15 +55,15 @@ def log_trades(trades, file_name, strategy_name):
     try:
         with open(file_path, 'w') as f:
             if strategy_name == 'ATR_Regression_Strategy':
-                f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition\n")  # 写入表头
+                f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition,Closed\n")  # 写入表头
             else:
-                f.write("Date,IsBuy,Price,Size,Value,PnL\n")  # 写入表头
+                f.write("Date,IsBuy,Price,Size,Value,PnL,Closed\n")  # 写入表头
             
             for trade in trades:
                 if strategy_name == 'ATR_Regression_Strategy':
-                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["x"]},{trade["ema200"]},{trade["atr"]},{trade["y"]},{trade["target_position"]},{trade["current_position"]}\n'
+                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["x"]},{trade["ema200"]},{trade["atr"]},{trade["y"]},{trade["target_position"]},{trade["current_position"]},{trade["closed"]}\n'
                 else:
-                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]}\n'
+                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["closed"]}\n'
                 f.write(log_str)
         print(f"Successfully wrote to {file_path}")
     except Exception as e:
