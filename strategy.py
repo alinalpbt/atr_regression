@@ -102,31 +102,32 @@ class BuyAndHoldStrategy(bt.Strategy):
             size = int(cash / (close_price * (1 + commission_rate + slippage_rate)))
             total_cost = size * close_price * (1 + commission_rate + slippage_rate)
             
-            self.log(f'Trying to buy: Cash={cash}, Close={close_price}, Size={size}, Total Cost={total_cost}')
+            # self.log(f'Trying to buy: Cash={cash}, Close={close_price}, Size={size}, Total Cost={total_cost}')
             if total_cost <= cash and size > 0:
                 self.order = self.buy(size=size)
                 self.buy_executed = True
-                self.log(f'Buy order created: Size={size}')
+                # self.log(f'Buy order created: Size={size}')
 
         # 判断是否达到倒数第二个bar
         if len(self) == self.data.total_lines - 2 and self.position and not self.sell_executed:
-            self.log(f'Trying to sell: Position Size={self.position.size}')
+            # self.log(f'Trying to sell: Position Size={self.position.size}')
             self.order = self.sell(size=self.position.size)
             self.sell_executed = True
 
     def notify_order(self, order):
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(f'BUY COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
+                # self.log(f'BUY COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
                 self.buy_count += 1
             elif order.issell():
-                self.log(f'SELL COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
+                # self.log(f'SELL COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
                 self.sell_count += 1
             self.order = None
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f'Order Canceled/Margin/Rejected: Status={order.status}, Ref={order.ref}')
+            # self.log(f'Order Canceled/Margin/Rejected: Status={order.status}, Ref={order.ref}')
             self.order = None
-            
+
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)
         print(f'{dt.isoformat()}, {txt}')
+

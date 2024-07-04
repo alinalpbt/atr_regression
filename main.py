@@ -3,7 +3,7 @@ import config
 from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
 from texttable import Texttable 
 from my_data import MyCSVData
-from LTanalyzer import LongTermTradeAnalyzer 
+from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn
 import json
 import os
 
@@ -43,6 +43,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
+    cerebro.addanalyzer(CalculateTotalReturn, _name='total_return')
     
     # 运行回测
     results = cerebro.run()
@@ -59,19 +60,20 @@ def log_trades(trades, file_name, strategy_name):
     try:
         with open(file_path, 'w') as f:
             if strategy_name == 'ATR_Regression_Strategy':
-                f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition,Closed\n")  # 写入表头
+                f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition,Closed\n")
             else:
-                f.write("Date,IsBuy,Price,Size,Value,PnL,Closed\n")  # 写入表头
+                f.write("Date,IsBuy,Price,Size,Value,PnL,Closed\n")
             
-            for trade in trades:
+            for trade in trades['trades']:
                 if strategy_name == 'ATR_Regression_Strategy':
-                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["x"]},{trade["ema200"]},{trade["atr"]},{trade["y"]},{trade["target_position"]},{trade["current_position"]},{trade["closed"]}\n'
+                    log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade.get("x", "")},{trade.get("ema200", "")},{trade.get("atr", "")},{trade.get("y", "")},{trade.get("target_position", "")},{trade.get("current_position", "")},{trade["closed"]}\n'
                 else:
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["closed"]}\n'
                 f.write(log_str)
-        # print(f"Successfully wrote to {file_path}")
+        print(f"Successfully wrote to {file_path}")
     except Exception as e:
         print(f"Error writing to {file_path}: {e}")
+
 
 def run_backtest():
     for name, data_file in config.data_files:
@@ -85,18 +87,28 @@ def run_backtest():
 
         # 获取 BuyAndHoldStrategy 的分析结果
         buy_and_hold_returns = buy_and_hold_strat.analyzers.returns.get_analysis()
+        BNH_total_return = buy_and_hold_strat.analyzers.total_return.get_analysis()['total_return']
         buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe.get_analysis()
         buy_and_hold_drawdown = buy_and_hold_strat.analyzers.drawdown.get_analysis()
+        BNH_start_value = buy_and_hold_strat.analyzers.total_return.start_value
+        BNH_end_value = buy_and_hold_strat.analyzers.total_return.end_value
 
         # 获取 ATR_Regression_Strategy 的分析结果
         atr_regression_returns = atr_regression_strat.analyzers.returns.get_analysis()
+        atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return']
         atr_regression_drawdown = atr_regression_strat.analyzers.drawdown.get_analysis()
         atr_regression_sharpe = atr_regression_strat.analyzers.sharpe.get_analysis()
+        atr_start_value = atr_regression_strat.analyzers.total_return.start_value
+        atr_end_value = atr_regression_strat.analyzers.total_return.end_value
 
         # 计算超额收益
-        excess_returns = atr_regression_returns['rtot'] - buy_and_hold_returns['rtot']
+        excess_returns = atr_total_return - BNH_total_return
 
-        # 打印回测时间
+        # 打印
+        print(f'{name} BuyAndHold start value is {BNH_start_value:.2f}')
+        print(f'{name} BuyAndHold end value is {BNH_end_value:.2f}')
+        print(f'{name} ATR_Regression start value is {atr_start_value:.2f}')
+        print(f'{name} ATR_Regression end value is {atr_end_value:.2f}')
         print(f"回测时间：从 {start_date} 到 {end_date}")
 
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
@@ -108,9 +120,9 @@ def run_backtest():
         table = Texttable()
         table.add_rows([
             ["分析项目", "ATR_Regression", "BuyAndHold", "超额收益"],
-            ["总收益率", f"{atr_regression_returns['rtot'] * 100:.2f}%" if 'rtot' in atr_regression_returns else "N/A",
-                            f"{buy_and_hold_returns['rtot'] * 100:.2f}%" if 'rtot' in buy_and_hold_returns else "N/A",
-                            f"{excess_returns * 100:.2f}%" if excess_returns else "N/A"],
+            ["总收益率", f"{atr_total_return * 100:.2f}%" if atr_total_return is not None else "N/A",
+                            f"{BNH_total_return * 100:.2f}%" if BNH_total_return is not None else "N/A",
+                            f"{excess_returns * 100:.2f}%" if excess_returns is not None else "N/A"],
             ["年化收益率", f"{atr_regression_returns['rnorm100']:.2f}%" if 'rnorm100' in atr_regression_returns else "N/A",
                             f"{buy_and_hold_returns['rnorm100']:.2f}%" if 'rnorm100' in buy_and_hold_returns else "N/A", 
                             " "],

@@ -1,7 +1,10 @@
 import backtrader as bt
+import numpy as np
 
 '''
 自定义的，解析长期持仓策略的分析器
+LongTermTradeAnalyzer用于输出单笔交易数据
+CalculateAnalyzer用于计算总收益率、年化收益率、最大回撤、夏普比率
 '''
 
 class LongTermTradeAnalyzer(bt.Analyzer):
@@ -28,17 +31,43 @@ class LongTermTradeAnalyzer(bt.Analyzer):
             }
             self.trades.append(trade_info)
 
-            # 将已关闭交易的盈亏添加到列表
-            if trade_info['closed']:
-                self.pnl.append(trade_info['pnl'])  
-
     def notify_trade(self, trade):
         if trade.isclosed:
             for t in self.trades:
                 if t['date'] == bt.num2date(trade.dtclose):
                     t['closed'] = True
                     t['pnl'] = trade.pnl
+                    self.pnl.append(trade.pnl)  # 记录已关闭交易的盈亏
                     break
 
     def get_analysis(self):
-        return self.trades
+        return {
+            'trades': self.trades,
+            'pnl': self.pnl
+        }
+    
+
+class CalculateTotalReturn(bt.Analyzer):
+    def __init__(self):
+        self.start_value = None
+        self.end_value = None
+
+    def start(self):
+        if self.start_value is None:
+            self.start_value = self.strategy.broker.get_value()
+            
+    def stop(self):
+        if self.end_value is None:
+            self.end_value = self.strategy.broker.get_value()
+           
+    def get_analysis(self):
+        # 获取 LongTermTradeAnalyzer 的分析结果
+        long_term_analysis = self.strategy.analyzers.longterm_trades.get_analysis()
+        pnl_sum = sum(long_term_analysis['pnl'])
+
+        # 计算总收益率
+        total_return = (self.end_value - self.start_value) / self.start_value
+
+        return {
+            'total_return': total_return
+        }
