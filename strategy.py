@@ -88,28 +88,45 @@ class BuyAndHoldStrategy(bt.Strategy):
         self.order = None  
         self.buy_executed = False
         self.sell_executed = False
+        self.log(f'Initial Cash: {self.broker.get_cash()}')
 
     def next(self):
         # 在第一个可交易的 bar 买入
         if len(self) == 1 and not self.position and not self.buy_executed:
-            self.order = self.buy()
-            self.buy_executed = True
+            cash = self.broker.get_cash()
+            close_price = self.data.close[0]
+            commission_rate = config.commission_rate
+            slippage_rate = config.slippage
+
+            # 计算总成本
+            size = int(cash / (close_price * (1 + commission_rate + slippage_rate)))
+            total_cost = size * close_price * (1 + commission_rate + slippage_rate)
+            
+            self.log(f'Trying to buy: Cash={cash}, Close={close_price}, Size={size}, Total Cost={total_cost}')
+            if total_cost <= cash and size > 0:
+                self.order = self.buy(size=size)
+                self.buy_executed = True
+                self.log(f'Buy order created: Size={size}')
 
         # 判断是否达到倒数第二个bar
         if len(self) == self.data.total_lines - 2 and self.position and not self.sell_executed:
-            self.order = self.sell()
+            self.log(f'Trying to sell: Position Size={self.position.size}')
+            self.order = self.sell(size=self.position.size)
             self.sell_executed = True
 
     def notify_order(self, order):
         if order.status in [order.Completed]:
             if order.isbuy():
-                # self.log('BUY COMPLETED, Price: %.2f' % order.executed.price)
+                self.log(f'BUY COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
                 self.buy_count += 1
             elif order.issell():
-                # self.log('SELL COMPLETED, Price: %.2f' % order.executed.price)
+                self.log(f'SELL COMPLETED, Price: {order.executed.price}, Size: {order.executed.size}')
                 self.sell_count += 1
             self.order = None
-
+        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
+            self.log(f'Order Canceled/Margin/Rejected: Status={order.status}, Ref={order.ref}')
+            self.order = None
+            
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)
-        print('%s, %s' % (dt.isoformat(), txt))
+        print(f'{dt.isoformat()}, {txt}')
