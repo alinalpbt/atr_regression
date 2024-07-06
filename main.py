@@ -44,6 +44,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
     cerebro.addanalyzer(CalculateTotalReturn, _name='total_return')
+    cerebro.addanalyzer(CalculateAnnualReturn, _name='annual_return')
     cerebro.addanalyzer(CalculateMaxDrawdown, _name='max_drawdown')
     cerebro.addanalyzer(CalculateSharpeRatio, _name='sharpe_ratio')
     
