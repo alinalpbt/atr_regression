@@ -3,7 +3,7 @@ import config
 from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
 from texttable import Texttable 
 from my_data import MyCSVData
-from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn, CalculateSharpeRatio, CalculateMaxDrawdown
+from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
 import json
 import os
 
@@ -45,8 +45,8 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
     cerebro.addanalyzer(CalculateTotalReturn, _name='total_return')
     cerebro.addanalyzer(CalculateAnnualReturn, _name='annual_return')
-    cerebro.addanalyzer(CalculateMaxDrawdown, _name='max_drawdown')
-    cerebro.addanalyzer(CalculateSharpeRatio, _name='sharpe_ratio')
+    # cerebro.addanalyzer(CalculateMaxDrawdown, _name='max_drawdown')
+    # cerebro.addanalyzer(CalculateSharpeRatio, _name='sharpe_ratio')
     
     # 运行回测
     results = cerebro.run()
@@ -73,7 +73,7 @@ def log_trades(trades, file_name, strategy_name):
                 else:
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["closed"]}\n'
                 f.write(log_str)
-        print(f"Successfully wrote to {file_path}")
+        print(f"每笔交易数据成功写入 {file_path}")
     except Exception as e:
         print(f"Error writing to {file_path}: {e}")
 
@@ -92,8 +92,8 @@ def run_backtest():
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
         buy_and_hold_total_return = buy_and_hold_strat.analyzers.total_return.get_analysis()['total_return']
         buy_and_hold_annual_return = buy_and_hold_strat.analyzers.annual_return.get_analysis()['annual_return']
-        buy_and_hold_drawdown = buy_and_hold_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
-        buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
+        # buy_and_hold_drawdown = buy_and_hold_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        # buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
         buy_and_hold_start_value = buy_and_hold_strat.analyzers.total_return.start_value
         buy_and_hold_end_value = buy_and_hold_strat.analyzers.total_return.end_value
 
@@ -101,8 +101,8 @@ def run_backtest():
         atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
         atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return'] 
         atr_annual_return = atr_regression_strat.analyzers.annual_return.get_analysis()['annual_return'] 
-        atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
-        atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
+        # atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        # atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
         atr_start_value = atr_regression_strat.analyzers.total_return.start_value
         atr_end_value = atr_regression_strat.analyzers.total_return.end_value
 
@@ -110,14 +110,11 @@ def run_backtest():
         excess_returns = atr_total_return - buy_and_hold_total_return
 
         # 打印
-        print(f'{name} BuyAndHold start value is {buy_and_hold_start_value:.2f}')
-        print(f'{name} BuyAndHold end value is {buy_and_hold_end_value:.2f}')
-        print(f'{name} ATR_Regression start value is {atr_start_value:.2f}')
-        print(f'{name} ATR_Regression end value is {atr_end_value:.2f}')
         print(f"回测时间：从 {start_date} 到 {end_date}")
-
-        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
-        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
+        print(f'BuyAndHold 初始本金为 {buy_and_hold_start_value:.2f}')
+        print(f'BuyAndHold 最终本金为 {buy_and_hold_end_value:.2f}')
+        print(f'ATR_Regression 初始本金为 {atr_start_value:.2f}')
+        print(f'ATR_Regression 最终本金为 {atr_end_value:.2f}')
 
         table = Texttable()
         table.add_rows([
@@ -128,18 +125,20 @@ def run_backtest():
             ["年化收益率", f"{atr_annual_return * 100:.2f}%" if atr_annual_return is not None else "N/A",
                             f"{buy_and_hold_annual_return * 100:.2f}%" if buy_and_hold_annual_return is not None else "N/A", 
                             " "],
-            ["最大回撤", f"{atr_regression_drawdown * 100:.2f}%" if atr_regression_drawdown is not None else "N/A",
-                         f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
-                         " "],
-            ["夏普比率", f"{atr_regression_sharpe:.2f}" if atr_regression_sharpe is not None else "N/A",
-                         f"{buy_and_hold_sharpe:.2f}" if buy_and_hold_sharpe is not None else "N/A", 
-                         " "],
+            # ["最大回撤", f"{atr_regression_drawdown * 100:.2f}%" if atr_regression_drawdown is not None else "N/A",
+            #              f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
+            #              " "],
+            # ["夏普比率", f"{atr_regression_sharpe:.2f}" if atr_regression_sharpe is not None else "N/A",
+            #              f"{buy_and_hold_sharpe:.2f}" if buy_and_hold_sharpe is not None else "N/A", 
+            #              " "],
             ["总交易笔数", atr_regression_strat.buy_count + atr_regression_strat.sell_count,
                           buy_and_hold_strat.buy_count + buy_and_hold_strat.sell_count,
                           " "]
         ])
 
         print(table.draw())
+        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
+        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
 
             # cerebro.plot(
             #     style='candlestick',      # 图表样式

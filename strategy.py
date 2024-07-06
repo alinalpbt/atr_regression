@@ -88,7 +88,7 @@ class BuyAndHoldStrategy(bt.Strategy):
         self.order = None  
         self.buy_executed = False
         self.sell_executed = False
-        self.log(f'Initial Cash: {self.broker.get_cash()}')
+        # self.log(f'Initial Cash: {self.broker.get_cash()}')
 
     def next(self):
         # 在第一个可交易的 bar 买入
