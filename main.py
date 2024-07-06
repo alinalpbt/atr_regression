@@ -3,7 +3,7 @@ import config
 from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
 from texttable import Texttable 
 from my_data import MyCSVData
-from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
+from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn,CalculateMaxDrawdown
 import json
 import os
 
@@ -45,7 +45,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
     cerebro.addanalyzer(CalculateTotalReturn, _name='total_return')
     cerebro.addanalyzer(CalculateAnnualReturn, _name='annual_return')
-    # cerebro.addanalyzer(CalculateMaxDrawdown, _name='max_drawdown')
+    cerebro.addanalyzer(CalculateMaxDrawdown, _name='max_drawdown')
     # cerebro.addanalyzer(CalculateSharpeRatio, _name='sharpe_ratio')
     
     # 运行回测
@@ -92,7 +92,7 @@ def run_backtest():
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
         buy_and_hold_total_return = buy_and_hold_strat.analyzers.total_return.get_analysis()['total_return']
         buy_and_hold_annual_return = buy_and_hold_strat.analyzers.annual_return.get_analysis()['annual_return']
-        # buy_and_hold_drawdown = buy_and_hold_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        buy_and_hold_drawdown = buy_and_hold_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
         # buy_and_hold_sharpe = buy_and_hold_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
         buy_and_hold_start_value = buy_and_hold_strat.analyzers.total_return.start_value
         buy_and_hold_end_value = buy_and_hold_strat.analyzers.total_return.end_value
@@ -101,7 +101,7 @@ def run_backtest():
         atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
         atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return'] 
         atr_annual_return = atr_regression_strat.analyzers.annual_return.get_analysis()['annual_return'] 
-        # atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
         # atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
         atr_start_value = atr_regression_strat.analyzers.total_return.start_value
         atr_end_value = atr_regression_strat.analyzers.total_return.end_value
@@ -125,9 +125,9 @@ def run_backtest():
             ["年化收益率", f"{atr_annual_return * 100:.2f}%" if atr_annual_return is not None else "N/A",
                             f"{buy_and_hold_annual_return * 100:.2f}%" if buy_and_hold_annual_return is not None else "N/A", 
                             " "],
-            # ["最大回撤", f"{atr_regression_drawdown * 100:.2f}%" if atr_regression_drawdown is not None else "N/A",
-            #              f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
-            #              " "],
+            ["最大回撤", f"{atr_regression_drawdown * 100:.2f}%" if atr_regression_drawdown is not None else "N/A",
+                         f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
+                         " "],
             # ["夏普比率", f"{atr_regression_sharpe:.2f}" if atr_regression_sharpe is not None else "N/A",
             #              f"{buy_and_hold_sharpe:.2f}" if buy_and_hold_sharpe is not None else "N/A", 
             #              " "],

@@ -114,24 +114,24 @@ class CalculateAnnualReturn(bt.Analyzer):
             'annual_return': annual_return
         }
     
-# # 计算最大回撤
-# class CalculateMaxDrawdown(bt.Analyzer):
-#     def __init__(self):
-#         self.max_drawdown = 0
-#         self.peak = -math.inf
+# 计算最大回撤
+class CalculateMaxDrawdown(bt.Analyzer):
+    def __init__(self):
+        self.max_drawdown = 0
+        self.peak = -math.inf
 
-#     def next(self):
-#         value = self.strategy.broker.get_value()
-#         if value > self.peak:
-#             self.peak = value
-#         drawdown = (self.peak - value) / self.peak
-#         if drawdown > self.max_drawdown:
-#             self.max_drawdown = drawdown
+    def next(self):
+        value = self.strategy.broker.get_value()
+        if value > self.peak:
+            self.peak = value
+        drawdown = (self.peak - value) / self.peak
+        if drawdown > self.max_drawdown:
+            self.max_drawdown = drawdown
 
-#     def get_analysis(self):
-#         return {
-#             'max_drawdown': self.max_drawdown
-#         }
+    def get_analysis(self):
+        return {
+            'max_drawdown': self.max_drawdown
+        }
 
 # # 计算夏普
 # class CalculateSharpeRatio(bt.Analyzer):
