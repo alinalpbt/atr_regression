@@ -133,26 +133,33 @@ class CalculateMaxDrawdown(bt.Analyzer):
             'max_drawdown': self.max_drawdown
         }
 
-# # 计算夏普
-# class CalculateSharpeRatio(bt.Analyzer):
-#     def __init__(self, risk_free_rate=0.0):
-#         self.risk_free_rate = risk_free_rate
-#         self.returns = []
+# 计算夏普
+class CalculateSharpeRatio(bt.Analyzer):
+    def __init__(self, risk_free_rate=0.02):
+        self.risk_free_rate = risk_free_rate
+        self.returns = []
 
-#     def next(self):
-#         value = self.strategy.broker.get_value()
-#         if len(self.returns) > 0:
-#             daily_return = (value - self.returns[-1]) / self.returns[-1]
-#             self.returns.append(daily_return)
-#         else:
-#             self.returns.append(value)
+    def next(self):
+        value = self.strategy.broker.get_value()
+        self.returns.append(value)
 
-#     def get_analysis(self):
-#         returns = self.returns[1:]
-#         mean_return = sum(returns) / len(returns)
-#         excess_returns = [r - self.risk_free_rate / 252 for r in returns]  # assuming 252 trading days in a year
-#         std_dev = math.sqrt(sum([r ** 2 for r in excess_returns]) / (len(excess_returns) - 1))
-#         sharpe_ratio = mean_return / std_dev * math.sqrt(252) if std_dev != 0 else 0
-#         return {
-#             'sharpe_ratio': sharpe_ratio
-#         }
+    def get_analysis(self):
+        if len(self.returns) < 2:
+            return {'sharpe_ratio': 0}
+        
+        # 计算每个4小时周期的收益率
+        period_returns = np.diff(self.returns) / self.returns[:-1]
+        
+        # 计算超额周期收益率
+        excess_period_returns = period_returns - self.risk_free_rate / (252 * 2)
+        
+        # 计算年化超额收益率
+        annualized_return = np.mean(excess_period_returns) * 252 * 2
+        
+        # 计算年化波动率
+        annualized_volatility = np.std(excess_period_returns) * np.sqrt(252 * 2)
+        
+        # 计算夏普比率
+        sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility != 0 else 0
+        
+        return {'sharpe_ratio': sharpe_ratio}
