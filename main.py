@@ -54,6 +54,9 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     start_date = data.num2date(data.datetime.array[0]).strftime('%Y-%m-%d')
     end_date = data.num2date(data.datetime.array[-1]).strftime('%Y-%m-%d')
 
+    # 绘图
+    cerebro.plot(style='candlestick')
+
     return results, start_date, end_date
 
 def log_trades(trades, file_name, strategy_name):
@@ -138,17 +141,6 @@ def run_backtest():
         print(table.draw())
         log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
         log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
-
-            # cerebro.plot(
-            #     style='candlestick',      # 图表样式
-            #     barup='green',            # 上涨柱颜色
-            #     bardown='red',            # 下跌柱颜色
-            #     volup='lightgreen',       # 成交量柱颜色（上涨）
-            #     voldown='pink',           # 成交量柱颜色（下跌）
-            #     tight=True,               # 紧凑布局
-            #     grid=True                 # 显示网格
-            # )
-
 
 if __name__ == '__main__':
     run_backtest()
