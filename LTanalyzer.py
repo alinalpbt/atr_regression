@@ -1,5 +1,6 @@
 import backtrader as bt
 import numpy as np
+import math
 
 '''
 自定义的，解析长期持仓策略的分析器
@@ -46,7 +47,7 @@ class LongTermTradeAnalyzer(bt.Analyzer):
             'pnl': self.pnl
         }
     
-
+# 计算总收益
 class CalculateTotalReturn(bt.Analyzer):
     def __init__(self):
         self.start_value = None
@@ -61,13 +62,85 @@ class CalculateTotalReturn(bt.Analyzer):
             self.end_value = self.strategy.broker.get_value()
            
     def get_analysis(self):
-        # 获取 LongTermTradeAnalyzer 的分析结果
-        long_term_analysis = self.strategy.analyzers.longterm_trades.get_analysis()
-        pnl_sum = sum(long_term_analysis['pnl'])
-
         # 计算总收益率
         total_return = (self.end_value - self.start_value) / self.start_value
 
         return {
             'total_return': total_return
+        }
+
+# 计算年化收益
+class CalculateAnnualReturn(bt.Analyzer):
+    def __init__(self):
+        self.start_value = None
+        self.end_value = None
+        self.start_date = None
+        self.end_date = None
+
+    def start(self):
+        if self.start_value is None:
+            self.start_value = self.strategy.broker.get_value()
+            self.start_date = self.strategy.datetime.date()
+
+    def stop(self):
+        if self.end_value is None:
+            self.end_value = self.strategy.broker.get_value()
+            self.end_date = self.strategy.datetime.date()
+
+    def get_analysis(self):
+        # Get total return using CalculateTotalReturn
+        total_return_analyzer = self.strategy.analyzers.total_return.get_analysis()
+        total_return = total_return_analyzer['total_return']
+        
+        # Calculate the number of days the strategy was run
+        days = (self.end_date - self.start_date).days
+        
+        # Calculate annualized return
+        annual_return = (1 + total_return) ** (365.0 / days) - 1
+
+        return {
+            'annual_return': annual_return
+        }
+    
+# 计算最大回撤
+class CalculateMaxDrawdown(bt.Analyzer):
+    def __init__(self):
+        self.max_drawdown = 0
+        self.peak = -math.inf
+
+    def next(self):
+        value = self.strategy.broker.get_value()
+        if value > self.peak:
+            self.peak = value
+        drawdown = (self.peak - value) / self.peak
+        if drawdown > self.max_drawdown:
+            self.max_drawdown = drawdown
+
+    def get_analysis(self):
+        return {
+            'max_drawdown': self.max_drawdown
+        }
+
+# 计算夏普
+class CalculateSharpeRatio(bt.Analyzer):
+    def __init__(self, risk_free_rate=0.0):
+        self.risk_free_rate = risk_free_rate
+        self.returns = []
+
+    def next(self):
+        value = self.strategy.broker.get_value()
+        if len(self.returns) > 0:
+            daily_return = (value - self.returns[-1]) / self.returns[-1]
+            self.returns.append(daily_return)
+        else:
+            self.returns.append(value)
+
+    def get_analysis(self):
+        returns = self.returns[1:]
+        mean_return = sum(returns) / len(returns)
+        excess_returns = [r - self.risk_free_rate / 252 for r in returns]  # assuming 252 trading days in a year
+        std_dev = math.sqrt(sum([r ** 2 for r in excess_returns]) / (len(excess_returns) - 1))
+        sharpe_ratio = mean_return / std_dev * math.sqrt(252) if std_dev != 0 else 0
+        return {
+            'sharpe_ratio': sharpe_ratio
         }
