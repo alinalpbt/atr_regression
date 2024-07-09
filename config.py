@@ -1,13 +1,13 @@
+import glob
+import os
+
 '''
 用于修改参数
 '''
 
-# 数据文件
-data_files = [
-    ("QQQ", "C:/github/atr_regression/results/processed_BATS_QQQ.csv"),
-    ("SPY", "C:/github/atr_regression/results/processed_BATS_SPY.csv"),
-    ("000300", "C:/github/atr_regression/results/processed_SSE_DLY_000300.csv")
-]
+# 获取 results 文件夹中的所有 CSV 文件
+data_dir = 'results'
+data_files = [(os.path.splitext(os.path.basename(file))[0], file) for file in glob.glob(os.path.join(data_dir, '*.csv'))]
 
 # 资金、佣金、滑点设置
 initial_cash = 10000

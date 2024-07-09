@@ -94,7 +94,7 @@ class CalculateAnnualReturn(bt.Analyzer):
     def get_analysis(self):
         # 计算总收益
         total_return_analyzer = self.strategy.analyzers.total_return.get_analysis()
-        total_return = total_return_analyzer['total_return']
+        total_return = total_return_analyzer['total_return'] # 直接提取总收益
         
         # 计算总周期时间
         if self.start_date and self.end_date:
@@ -106,7 +106,7 @@ class CalculateAnnualReturn(bt.Analyzer):
         
         # 计算年化
         if years > 0:
-            annual_return = (1 + total_return) ** (1 / years) - 1
+            annual_return = (1 + total_return) ** (1 / years) - 1 #如果年数大于0，用复利公式计算年收益
         else:
             annual_return = total_return
 
@@ -117,14 +117,14 @@ class CalculateAnnualReturn(bt.Analyzer):
 # 计算最大回撤
 class CalculateMaxDrawdown(bt.Analyzer):
     def __init__(self):
-        self.max_drawdown = 0
-        self.peak = -math.inf
+        self.max_drawdown = 0 #存储最大回撤值
+        self.peak = -math.inf #存储历史最高点的资产值
 
     def next(self):
-        value = self.strategy.broker.get_value()
+        value = self.strategy.broker.get_value() #获取当前策略的总资产值
         if value > self.peak:
             self.peak = value
-        drawdown = (self.peak - value) / self.peak
+        drawdown = (self.peak - value) / self.peak # 回撤 = (历史最高点资产 - 历史最低点资产) / 历史最高点资产
         if drawdown > self.max_drawdown:
             self.max_drawdown = drawdown
 
@@ -137,7 +137,7 @@ class CalculateMaxDrawdown(bt.Analyzer):
 class CalculateSharpeRatio(bt.Analyzer):
     def __init__(self, risk_free_rate=0.02):
         self.risk_free_rate = risk_free_rate
-        self.returns = []
+        self.returns = [] #存储策略的每期收益值
 
     def next(self):
         value = self.strategy.broker.get_value()
@@ -147,19 +147,19 @@ class CalculateSharpeRatio(bt.Analyzer):
         if len(self.returns) < 2:
             return {'sharpe_ratio': 0}
         
-        # 计算每个4小时周期的收益率
+        # 计算每个4小时周期的收益率,去掉最后一个元素，计算连续资产值之间的差异
         period_returns = np.diff(self.returns) / self.returns[:-1]
         
-        # 计算超额周期收益率
-        excess_period_returns = period_returns - self.risk_free_rate / (252 * 2)
+        # 计算超额周期收益率,将无风险利率按252个交易日和每个交易日两个4小时周期调整
+        excess_period_returns = period_returns - self.risk_free_rate / (252 * 2) 
         
-        # 计算年化超额收益率
+        # 计算年化超额收益率,将超额收益率的平均值乘以每年的周期数（252天，每天两个4小时周期）
         annualized_return = np.mean(excess_period_returns) * 252 * 2
         
-        # 计算年化波动率
+        # 计算年化波动率,超额收益率的标准差乘以周期数的平方根
         annualized_volatility = np.std(excess_period_returns) * np.sqrt(252 * 2)
         
-        # 计算夏普比率
+        # 计算夏普比率,如果年化波动率不为零，则用年化超额收益率除以年化波动率
         sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility != 0 else 0
         
         return {'sharpe_ratio': sharpe_ratio}

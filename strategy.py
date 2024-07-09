@@ -2,7 +2,7 @@ import backtrader as bt
 import config
 
 '''
-策略：atr_regression 和 buyandhold
+策略
 '''
 
 class ATR_Regression_Strategy(bt.Strategy):
