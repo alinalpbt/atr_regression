@@ -12,8 +12,7 @@ class MyCSVData(bt.feeds.GenericCSVData):
         ('open', 1),
         ('high', 2),
         ('low', 3),
-        ('close', 4),
-        ('volume', 5),
+        ('close', 4)
     )
 
     # 因为我们的数据是非连续的（节假日信息空缺），这里为了减少数据的处理，增加用行数指代bar的位置的逻辑
@@ -38,7 +37,6 @@ class MyCSVData(bt.feeds.GenericCSVData):
         self.lines.high[0] = float(linetokens[self.p.high])
         self.lines.low[0] = float(linetokens[self.p.low])
         self.lines.close[0] = float(linetokens[self.p.close])
-        self.lines.volume[0] = float(linetokens[self.p.volume])
 
         return True
     
