@@ -116,7 +116,7 @@ def run_backtest():
         VAD_start_value = VADStrategy_strat.analyzers.total_return.start_value
         VAD_end_value = VADStrategy_strat.analyzers.total_return.end_value
 
-        # 获取atr_regression的分析结果
+        # 获取AR的分析结果
         # AR_trades = AR_strat.analyzers.longterm_trades.get_analysis()
         # AR_total_return = AR_strat.analyzers.total_return.get_analysis()['total_return'] 
         # AR_annual_return = AR_strat.analyzers.annual_return.get_analysis()['annual_return'] 
