@@ -9,12 +9,11 @@ import pandas as pd
 from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
 from LTanalyzer import CalculateMaxDrawdown,CalculateSharpeRatio
 import os
-import matplotlib.pyplot as plt
+from visual import plot_results
 
 '''
 运行回测
 '''
-# plt.switch_backend('agg')
 
 # 确保结果目录存在
 output_dir = 'data'
@@ -57,11 +56,6 @@ def add_data_and_run_strategy(strategy_class, data_file, name, strategy_name):
     # 获取回测时间
     start_date = pd.to_datetime(config.backtest_params['start_date']).strftime('%Y-%m-%d')
     end_date = pd.to_datetime(config.backtest_params['end_date']).strftime('%Y-%m-%d')
-
-    # # 绘图
-    # fig = cerebro.plot(style='candlestick', volume=False)[0][0]
-    # fig.savefig(f'{output_dir}/{name}_{strategy_name}_plot.png') 
-    # plt.close(fig)
 
     return results, start_date, end_date
 
@@ -159,6 +153,15 @@ def run_backtest():
         print(table.draw())
         log_trades(buy_and_hold_trades, f'{name}_buy_and_hold_trades.csv', 'BuyAndHoldStrategy')
         log_trades(VAD_trades, f'{name}_VAD_trades.csv', 'VADStrategy')
+
+        # # 准备绘图数据
+        # data = {
+        #     'date': pd.date_range(start=start_date, end=end_date),
+        #     'net_value': [...]  # 这里填入实际的净值数据
+        # }
+        # df = pd.DataFrame(data)
+        # plot_results(df, name, 'VADStrategy')
+
 
 if __name__ == '__main__':
     run_backtest()
