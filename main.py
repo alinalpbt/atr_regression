@@ -5,39 +5,44 @@ from strategy import BuyAndHoldStrategy
 # from strategy import ATR_Regression_Strategy
 from texttable import Texttable 
 from my_data import MyCSVData
+import pandas as pd
 from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
 from LTanalyzer import CalculateMaxDrawdown,CalculateSharpeRatio
 import os
+import matplotlib.pyplot as plt
 
 '''
 运行回测
 '''
+# plt.switch_backend('agg')
 
 # 确保结果目录存在
 output_dir = 'data'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-def add_data_and_run_strategy(strategy_class, data_file, name):
+def add_data_and_run_strategy(strategy_class, data_file, name, strategy_name):
     cerebro = bt.Cerebro()
-    data = MyCSVData(  # 使用自定义数据源类
+    data = MyCSVData( 
         dataname=data_file,
         dtformat='%Y/%m/%d %H:%M',
         datetime=0,
         open=1,
         high=2,
         low=3,
-        close=4
+        close=4,
+        fromdate=pd.to_datetime(config.backtest_params['start_date']),
+        todate=pd.to_datetime(config.backtest_params['end_date'])
     )
     
     # 添加数据、策略
     cerebro.adddata(data, name=name)
-    cerebro.addstrategy(strategy_class) # 动态添加策略
+    cerebro.addstrategy(strategy_class)
 
     # 添加资金、佣金、滑点
     cerebro.broker.setcash(config.broker_params['initial_cash'])
-    cerebro.broker.setcommission(commission=config.broker_params['commission_rate'])
-    cerebro.broker.set_slippage_perc(perc=config.broker_params['slippage'])
+    cerebro.broker.setcommission(config.broker_params['commission_rate'])
+    cerebro.broker.set_slippage_perc(config.broker_params['slippage'])
     
     # 添加分析器
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
@@ -50,11 +55,13 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     results = cerebro.run()
 
     # 获取回测时间
-    start_date = data.num2date(data.datetime.array[0]).strftime('%Y-%m-%d')
-    end_date = data.num2date(data.datetime.array[-1]).strftime('%Y-%m-%d')
+    start_date = pd.to_datetime(config.backtest_params['start_date']).strftime('%Y-%m-%d')
+    end_date = pd.to_datetime(config.backtest_params['end_date']).strftime('%Y-%m-%d')
 
-    # 绘图
-    cerebro.plot(style='candlestick', volume=False)
+    # # 绘图
+    # fig = cerebro.plot(style='candlestick', volume=False)[0][0]
+    # fig.savefig(f'{output_dir}/{name}_{strategy_name}_plot.png') 
+    # plt.close(fig)
 
     return results, start_date, end_date
 
@@ -63,13 +70,13 @@ def log_trades(trades, file_name, strategy_name):
 
     try:
         with open(file_path, 'w') as f:
-            if strategy_name == 'ATR_Regression_Strategy':
+            if strategy_name == 'VADStrategy':
                 f.write("Date,IsBuy,Price,Size,Value,PnL,x,ema200,atr,y,TargetPosition,CurrentPosition,Closed\n")
             else:
                 f.write("Date,IsBuy,Price,Size,Value,PnL,Closed\n")
             
             for trade in trades['trades']:
-                if strategy_name == 'ATR_Regression_Strategy':
+                if strategy_name == 'VADStrategy':
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade.get("x", "")},{trade.get("ema200", "")},{trade.get("atr", "")},{trade.get("y", "")},{trade.get("target_position", "")},{trade.get("current_position", "")},{trade["closed"]}\n'
                 else:
                     log_str = f'{trade["date"]},{trade["isbuy"]},{trade["price"]},{trade["size"]},{trade["value"]},{trade["pnl"]},{trade["closed"]}\n'
@@ -84,9 +91,9 @@ def run_backtest():
         print(f"\n{name} 分析结果:")
 
         # 运行策略
-        buy_and_hold_results, start_date, end_date = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
+        buy_and_hold_results, start_date, end_date = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name, 'BuyAndHoldStrategy')
         buy_and_hold_strat = buy_and_hold_results[0]
-        VADStrategy_results, start_date, end_date = add_data_and_run_strategy(VADStrategy, data_file, name)
+        VADStrategy_results, start_date, end_date = add_data_and_run_strategy(VADStrategy, data_file, name, 'VADStrategy')
         VADStrategy_strat = VADStrategy_results[0]
         # atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
         # atr_regression_strat = atr_regression_results[0]
@@ -126,18 +133,18 @@ def run_backtest():
         print(f"回测时间：从 {start_date} 到 {end_date}")
         print(f'BuyAndHold 初始本金为 {buy_and_hold_start_value:.2f}')
         print(f'BuyAndHold 最终本金为 {buy_and_hold_end_value:.2f}')
-        print(f'ATR_Regression 初始本金为 {VAD_start_value:.2f}')
-        print(f'ATR_Regression 最终本金为 {VAD_end_value:.2f}')
+        print(f'VADStrategy 初始本金为 {VAD_start_value:.2f}')
+        print(f'VADStrategy 最终本金为 {VAD_end_value:.2f}')
 
         table = Texttable()
         table.add_rows([
-            ["分析项目", "ATR_Regression", "BuyAndHold", "超额收益"],
+            ["分析项目", "VADStrategy", "BuyAndHold", "超额收益"],
             ["总收益率", f"{VAD_total_return * 100:.2f}%" if VAD_total_return is not None else "N/A",
                             f"{buy_and_hold_total_return * 100:.2f}%" if buy_and_hold_total_return is not None else "N/A",
                             f"{excess_total_returns * 100:.2f}%" if excess_total_returns is not None else "N/A"],
             ["年化收益率", f"{VAD_annual_return * 100:.2f}%" if VAD_annual_return is not None else "N/A",
                             f"{buy_and_hold_annual_return * 100:.2f}%" if buy_and_hold_annual_return is not None else "N/A", 
-                            f"{excess_annual_returns * 100:.2f}%" if excess_annual_returns is not None else "N/A"]],
+                            f"{excess_annual_returns * 100:.2f}%" if excess_annual_returns is not None else "N/A"],
             ["最大回撤", f"{VAD_drawdown * 100:.2f}%" if VAD_drawdown is not None else "N/A",
                          f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
                          " "],
@@ -151,7 +158,7 @@ def run_backtest():
 
         print(table.draw())
         log_trades(buy_and_hold_trades, f'{name}_buy_and_hold_trades.csv', 'BuyAndHoldStrategy')
-        log_trades(VAD_trades, f'{name}_VAD_trades.csv', 'VAD_Strategy')
+        log_trades(VAD_trades, f'{name}_VAD_trades.csv', 'VADStrategy')
 
 if __name__ == '__main__':
     run_backtest()

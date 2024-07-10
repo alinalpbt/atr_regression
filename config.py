@@ -9,10 +9,11 @@ import os
 data_dir = 'results'
 data_files = [(os.path.splitext(os.path.basename(file))[0], file) for file in glob.glob(os.path.join(data_dir, '*.csv'))]
 
-
-'''
-交易所 Broker 参数设置
-'''
+# 回测时间参数
+backtest_params = {
+    'start_date': '2023-6-30',
+    'end_date': '2024-06-30'
+}
 
 # 资金、佣金、滑点设置
 broker_params = {
@@ -24,7 +25,6 @@ broker_params = {
 '''
 策略 Strategy 参数设置
 '''
-
 # ATR_Regression_Strategy参数
 atr_regression_params = {
     'ema_period': 200,
@@ -44,7 +44,6 @@ vad_strategy_params = {
 '''
 指标 Indicator 参数设置
 '''
-
 # VWMA
 indicator_params = {
     'vwma_period': 14

@@ -19,6 +19,8 @@ class VADStrategy(bt.Strategy):
         self.allqty = 0
         self.last_dca_price = 0.0
         self.total_long_trades = 0
+        self.buy_count = 0
+        self.sell_count = 0
 
     def next(self):
         vwma_above = self.vwma.vwma[0] + self.dca_add_line[0]
@@ -26,13 +28,16 @@ class VADStrategy(bt.Strategy):
         long_signal = self.data.low[0] <= vwma_below
         short_signal = self.data.high[0] >= vwma_above
         
+        # 开仓逻辑
         if long_signal and self.total_long_trades == 0:
             size = self.params.base_order_amount / self.data.close[0]
             self.buy(size=size)
             self.last_dca_price = self.params.base_order_amount
             self.allqty = size
             self.total_long_trades = 1
+            self.buy_count += 1
 
+        # 加仓逻辑
         elif long_signal and self.total_long_trades > 0 and self.total_long_trades <= self.params.number_of_dca_orders:
             if self.data.close[0] <= (self.broker.getposition(self.data).price - self.dca_add_line[0]):
                 self.last_dca_price *= self.params.dca_multiplier
@@ -41,16 +46,21 @@ class VADStrategy(bt.Strategy):
                 self.add_long_counter += 1
                 self.allqty += size
                 self.total_long_trades += 1
+                self.buy_count += 1
 
+        # 止盈止损
         if self.total_long_trades > 0:
             if short_signal and self.position.size > 0 and self.data.close[0] >= self.broker.getposition(self.data).price + self.take_profit_percent[0]:
                 self.sell(size=self.position.size)
                 self.add_long_counter = 1
                 self.total_long_trades = 0
+                self.sell_count += 1
+
             elif short_signal and self.position.size > 0 and self.data.close[0] <= self.broker.getposition(self.data).price - self.stop_loss_percent[0]:
                 self.sell(size=self.position.size)
                 self.add_long_counter = 1
                 self.total_long_trades = 0
+                self.sell_count += 1
 
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)
@@ -70,8 +80,8 @@ class BuyAndHoldStrategy(bt.Strategy):
         if len(self) == 1 and not self.position and not self.buy_executed:
             cash = self.broker.get_cash()
             close_price = self.data.close[0]
-            commission_rate = config.commission_rate
-            slippage_rate = config.slippage
+            commission_rate = config.broker_params['commission_rate']
+            slippage_rate = config.broker_params['slippage']
 
             # 计算总成本
             size = int(cash / (close_price * (1 + commission_rate + slippage_rate)))
