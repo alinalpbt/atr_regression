@@ -54,7 +54,7 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     end_date = data.num2date(data.datetime.array[-1]).strftime('%Y-%m-%d')
 
     # 绘图
-    cerebro.plot(style='candlestick', plotter=bt.plot.Plot(plotvolume=False))
+    cerebro.plot(style='candlestick', volume=False)
 
     return results, start_date, end_date
 
