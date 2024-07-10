@@ -32,10 +32,10 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.addstrategy(strategy_class) # 动态添加策略
 
     # 添加资金、佣金、滑点
-    cerebro.broker.setcash(config.initial_cash)
-    cerebro.broker.setcommission(commission=config.commission_rate)
-    cerebro.broker.set_slippage_perc(perc=config.slippage)
-
+    cerebro.broker.setcash(config.broker_params['initial_cash'])
+    cerebro.broker.setcommission(commission=config.broker_params['commission_rate'])
+    cerebro.broker.set_slippage_perc(perc=config.broker_params['slippage'])
+    
     # 添加分析器
     cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
