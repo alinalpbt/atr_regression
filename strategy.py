@@ -7,60 +7,65 @@ from indicators import VWMA
 '''
 
 class VADStrategy(bt.Strategy):
-    params = config.vad_strategy_params
+    params = (
+        ('k', config.vad_strategy_params['k']),
+        ('base_order_amount', config.vad_strategy_params['base_order_amount']),
+        ('dca_multiplier', config.vad_strategy_params['dca_multiplier']),
+        ('number_of_dca_orders', config.vad_strategy_params['number_of_dca_orders'])
+    )
 
     def __init__(self):
-        self.atr = bt.indicators.ATR(self.data, period=14)
-        self.vwma = VWMA(self.data, period=14)
-        self.dca_add_line = self.params.k * self.atr
+        self.atr = bt.indicators.ATR(self.data, period=14) #这个要改成 Indicator里的指标
+        self.vwma = VWMA(self.data, period=config.indicator_params['vwma_period'])
+        self.k_atr = self.params.k * self.atr
         self.take_profit_percent = self.params.k * self.atr
         self.stop_loss_percent = self.params.k * self.atr
         self.add_long_counter = 1
-        self.allqty = 0
         self.last_dca_price = 0.0
         self.total_long_trades = 0
         self.buy_count = 0
         self.sell_count = 0
 
     def next(self):
-        vwma_above = self.vwma.vwma[0] + self.dca_add_line[0]
-        vwma_below = self.vwma.vwma[0] - self.dca_add_line[0]
-        long_signal = self.data.low[0] <= vwma_below
-        short_signal = self.data.high[0] >= vwma_above
+        vwma_above = self.vwma.vwma[0] + self.k_atr[0]
+        vwma_below = self.vwma.vwma[0] - self.k_atr[0]
+        long_signal = self.data.close[0] < vwma_below
+        short_signal = self.data.close[0] > vwma_above
         
         # 开仓逻辑
         if long_signal and self.total_long_trades == 0:
             size = self.params.base_order_amount / self.data.close[0]
             self.buy(size=size)
             self.last_dca_price = self.params.base_order_amount
-            self.allqty = size
             self.total_long_trades = 1
             self.buy_count += 1
+            self.log(f'Buy order: Size={size}, Price={self.data.close[0]}')
 
         # 加仓逻辑
-        elif long_signal and self.total_long_trades > 0 and self.total_long_trades <= self.params.number_of_dca_orders:
-            if self.data.close[0] <= (self.broker.getposition(self.data).price - self.dca_add_line[0]):
-                self.last_dca_price *= self.params.dca_multiplier
-                size = self.last_dca_price / self.data.close[0]
-                self.buy(size=size)
-                self.add_long_counter += 1
-                self.allqty += size
-                self.total_long_trades += 1
-                self.buy_count += 1
+        elif long_signal and self.total_long_trades > 0 and self.total_long_trades < self.params.number_of_dca_orders:
+            self.last_dca_price *= self.params.dca_multiplier
+            size = self.last_dca_price / self.data.close[0]
+            self.buy(size=size)
+            self.add_long_counter += 1
+            self.total_long_trades += 1
+            self.buy_count += 1
+            self.log(f'Additional Buy order: Size={size}, Price={self.data.close[0]}')
 
-        # 止盈止损
-        if self.total_long_trades > 0:
-            if short_signal and self.position.size > 0 and self.data.close[0] >= self.broker.getposition(self.data).price + self.take_profit_percent[0]:
-                self.sell(size=self.position.size)
-                self.add_long_counter = 1
-                self.total_long_trades = 0
-                self.sell_count += 1
+        # 计算未平仓利润
+        if self.position.size > 0:
+            cost_basis = self.position.price
+            current_price = self.data.close[0]
 
-            elif short_signal and self.position.size > 0 and self.data.close[0] <= self.broker.getposition(self.data).price - self.stop_loss_percent[0]:
+            # 止盈止损
+            if short_signal and current_price - cost_basis >= self.take_profit_percent[0] * self.position.size:
                 self.sell(size=self.position.size)
-                self.add_long_counter = 1
-                self.total_long_trades = 0
                 self.sell_count += 1
+                self.log(f'Sell order (Take Profit): Size={self.position.size}, Price={self.data.close[0]}')
+
+            elif short_signal and current_price - cost_basis <= - self.take_profit_percent[0] * self.position.size:
+                self.sell(size=self.position.size)
+                self.sell_count += 1
+                self.log(f'Sell order (Stop Loss): Size={self.position.size}, Price={self.data.close[0]}')
 
     def log(self, txt, dt=None):
         dt = dt or self.datas[0].datetime.date(0)

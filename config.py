@@ -17,7 +17,7 @@ backtest_params = {
 
 # 资金、佣金、滑点设置
 broker_params = {
-    'initial_cash': 10000,
+    'initial_cash': 1000000,
     'commission_rate': 5/10000,
     'slippage': 1/1000
 }

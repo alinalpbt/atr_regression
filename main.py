@@ -9,7 +9,7 @@ import pandas as pd
 from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
 from LTanalyzer import CalculateMaxDrawdown,CalculateSharpeRatio
 import os
-from visual import plot_results
+# from visual import plot_results
 
 '''
 运行回测
