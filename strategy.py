@@ -117,7 +117,7 @@ class BuyAndHoldStrategy(bt.Strategy):
         print(f'{dt.isoformat()}, {txt}')
 
 
-# class ATR_Regression_Strategy(bt.Strategy):
+# class AR_Strategy(bt.Strategy):
 #     params = config.atr_regression_params
 
 #     def __init__(self):

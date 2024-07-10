@@ -2,7 +2,7 @@ import backtrader as bt
 import config
 from strategy import VADStrategy
 from strategy import BuyAndHoldStrategy
-# from strategy import ATR_Regression_Strategy
+# from strategy import AR_Strategy
 from texttable import Texttable 
 from my_data import MyCSVData
 import pandas as pd
@@ -95,8 +95,8 @@ def run_backtest():
         buy_and_hold_strat = buy_and_hold_results[0]
         VADStrategy_results, start_date, end_date = add_data_and_run_strategy(VADStrategy, data_file, name, 'VADStrategy')
         VADStrategy_strat = VADStrategy_results[0]
-        # atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
-        # atr_regression_strat = atr_regression_results[0]
+        # AR_results, _, _ = add_data_and_run_strategy(AR_results, data_file, name)
+        # AR_strat = AR_results[0]
 
         # 获取 BuyAndHoldStrategy 的分析结果
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
@@ -117,13 +117,13 @@ def run_backtest():
         VAD_end_value = VADStrategy_strat.analyzers.total_return.end_value
 
         # 获取atr_regression的分析结果
-        # atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
-        # atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return'] 
-        # atr_annual_return = atr_regression_strat.analyzers.annual_return.get_analysis()['annual_return'] 
-        # atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
-        # atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
-        # atr_start_value = atr_regression_strat.analyzers.total_return.start_value
-        # atr_end_value = atr_regression_strat.analyzers.total_return.end_value
+        # AR_trades = AR_strat.analyzers.longterm_trades.get_analysis()
+        # AR_total_return = AR_strat.analyzers.total_return.get_analysis()['total_return'] 
+        # AR_annual_return = AR_strat.analyzers.annual_return.get_analysis()['annual_return'] 
+        # AR_drawdown = AR_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        # AR_sharpe = AR_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
+        # AR_start_value = AR_strat.analyzers.total_return.start_value
+        # AR_end_value = AR_strat.analyzers.total_return.end_value
 
         # 计算超额收益
         excess_total_returns = VAD_total_return - buy_and_hold_total_return
