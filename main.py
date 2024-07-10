@@ -1,9 +1,12 @@
 import backtrader as bt
 import config
-from strategy import ATR_Regression_Strategy, BuyAndHoldStrategy
+from strategy import VADStrategy
+from strategy import BuyAndHoldStrategy
+# from strategy import ATR_Regression_Strategy
 from texttable import Texttable 
 from my_data import MyCSVData
-from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn,CalculateMaxDrawdown,CalculateSharpeRatio
+from LTanalyzer import LongTermTradeAnalyzer, CalculateTotalReturn, CalculateAnnualReturn
+from LTanalyzer import CalculateMaxDrawdown,CalculateSharpeRatio
 import os
 
 '''
@@ -37,9 +40,6 @@ def add_data_and_run_strategy(strategy_class, data_file, name):
     cerebro.broker.set_slippage_perc(perc=config.broker_params['slippage'])
     
     # 添加分析器
-    cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(LongTermTradeAnalyzer, _name='longterm_trades')
     cerebro.addanalyzer(CalculateTotalReturn, _name='total_return')
     cerebro.addanalyzer(CalculateAnnualReturn, _name='annual_return')
@@ -86,8 +86,10 @@ def run_backtest():
         # 运行策略
         buy_and_hold_results, start_date, end_date = add_data_and_run_strategy(BuyAndHoldStrategy, data_file, name)
         buy_and_hold_strat = buy_and_hold_results[0]
-        atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
-        atr_regression_strat = atr_regression_results[0]
+        VADStrategy_results, start_date, end_date = add_data_and_run_strategy(VADStrategy, data_file, name)
+        VADStrategy_strat = VADStrategy_results[0]
+        # atr_regression_results, _, _ = add_data_and_run_strategy(ATR_Regression_Strategy, data_file, name)
+        # atr_regression_strat = atr_regression_results[0]
 
         # 获取 BuyAndHoldStrategy 的分析结果
         buy_and_hold_trades = buy_and_hold_strat.analyzers.longterm_trades.get_analysis()
@@ -98,48 +100,58 @@ def run_backtest():
         buy_and_hold_start_value = buy_and_hold_strat.analyzers.total_return.start_value
         buy_and_hold_end_value = buy_and_hold_strat.analyzers.total_return.end_value
 
-        # 获取 ATR_Regression_Strategy 的分析结果
-        atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
-        atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return'] 
-        atr_annual_return = atr_regression_strat.analyzers.annual_return.get_analysis()['annual_return'] 
-        atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
-        atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
-        atr_start_value = atr_regression_strat.analyzers.total_return.start_value
-        atr_end_value = atr_regression_strat.analyzers.total_return.end_value
+        # 获取 VADStrategy 的分析结果
+        VAD_trades = VADStrategy_strat.analyzers.longterm_trades.get_analysis()
+        VAD_total_return = VADStrategy_strat.analyzers.total_return.get_analysis()['total_return'] 
+        VAD_annual_return = VADStrategy_strat.analyzers.annual_return.get_analysis()['annual_return'] 
+        VAD_drawdown = VADStrategy_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        VAD_sharpe = VADStrategy_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
+        VAD_start_value = VADStrategy_strat.analyzers.total_return.start_value
+        VAD_end_value = VADStrategy_strat.analyzers.total_return.end_value
+
+        # 获取atr_regression的分析结果
+        # atr_regression_trades = atr_regression_strat.analyzers.longterm_trades.get_analysis()
+        # atr_total_return = atr_regression_strat.analyzers.total_return.get_analysis()['total_return'] 
+        # atr_annual_return = atr_regression_strat.analyzers.annual_return.get_analysis()['annual_return'] 
+        # atr_regression_drawdown = atr_regression_strat.analyzers.max_drawdown.get_analysis()['max_drawdown']
+        # atr_regression_sharpe = atr_regression_strat.analyzers.sharpe_ratio.get_analysis()['sharpe_ratio']
+        # atr_start_value = atr_regression_strat.analyzers.total_return.start_value
+        # atr_end_value = atr_regression_strat.analyzers.total_return.end_value
 
         # 计算超额收益
-        excess_returns = atr_total_return - buy_and_hold_total_return
+        excess_total_returns = VAD_total_return - buy_and_hold_total_return
+        excess_annual_returns = VAD_annual_return - buy_and_hold_annual_return
 
         # 打印
         print(f"回测时间：从 {start_date} 到 {end_date}")
         print(f'BuyAndHold 初始本金为 {buy_and_hold_start_value:.2f}')
         print(f'BuyAndHold 最终本金为 {buy_and_hold_end_value:.2f}')
-        print(f'ATR_Regression 初始本金为 {atr_start_value:.2f}')
-        print(f'ATR_Regression 最终本金为 {atr_end_value:.2f}')
+        print(f'ATR_Regression 初始本金为 {VAD_start_value:.2f}')
+        print(f'ATR_Regression 最终本金为 {VAD_end_value:.2f}')
 
         table = Texttable()
         table.add_rows([
             ["分析项目", "ATR_Regression", "BuyAndHold", "超额收益"],
-            ["总收益率", f"{atr_total_return * 100:.2f}%" if atr_total_return is not None else "N/A",
+            ["总收益率", f"{VAD_total_return * 100:.2f}%" if VAD_total_return is not None else "N/A",
                             f"{buy_and_hold_total_return * 100:.2f}%" if buy_and_hold_total_return is not None else "N/A",
-                            f"{excess_returns * 100:.2f}%" if excess_returns is not None else "N/A"],
-            ["年化收益率", f"{atr_annual_return * 100:.2f}%" if atr_annual_return is not None else "N/A",
+                            f"{excess_total_returns * 100:.2f}%" if excess_total_returns is not None else "N/A"],
+            ["年化收益率", f"{VAD_annual_return * 100:.2f}%" if VAD_annual_return is not None else "N/A",
                             f"{buy_and_hold_annual_return * 100:.2f}%" if buy_and_hold_annual_return is not None else "N/A", 
-                            " "],
-            ["最大回撤", f"{atr_regression_drawdown * 100:.2f}%" if atr_regression_drawdown is not None else "N/A",
+                            f"{excess_annual_returns * 100:.2f}%" if excess_annual_returns is not None else "N/A"]],
+            ["最大回撤", f"{VAD_drawdown * 100:.2f}%" if VAD_drawdown is not None else "N/A",
                          f"{buy_and_hold_drawdown * 100:.2f}%" if buy_and_hold_drawdown is not None else "N/A", 
                          " "],
-            ["夏普比率", f"{atr_regression_sharpe:.2f}" if atr_regression_sharpe is not None else "N/A",
+            ["夏普比率", f"{VAD_sharpe:.2f}" if VAD_sharpe is not None else "N/A",
                          f"{buy_and_hold_sharpe:.2f}" if buy_and_hold_sharpe is not None else "N/A", 
                          " "],
-            ["总交易笔数", atr_regression_strat.buy_count + atr_regression_strat.sell_count,
+            ["总交易笔数", VADStrategy_strat.buy_count + VADStrategy_strat.sell_count,
                           buy_and_hold_strat.buy_count + buy_and_hold_strat.sell_count,
                           " "]
         ])
 
         print(table.draw())
-        log_trades(buy_and_hold_trades, f'trades_{name}_buy_and_hold.csv', 'BuyAndHoldStrategy')
-        log_trades(atr_regression_trades, f'trades_{name}_atr_regression.csv', 'ATR_Regression_Strategy')
+        log_trades(buy_and_hold_trades, f'{name}_buy_and_hold_trades.csv', 'BuyAndHoldStrategy')
+        log_trades(VAD_trades, f'{name}_VAD_trades.csv', 'VAD_Strategy')
 
 if __name__ == '__main__':
     run_backtest()
